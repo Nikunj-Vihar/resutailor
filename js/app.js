@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Support banner (free tool, optional gratitude tip)
     initSupportBanner();
+    renderSupportQR();
 
     // Clean up license data from the old subscription model
     localStorage.removeItem('resutailor_license_key');
@@ -171,7 +172,7 @@ function updateApiStatusUI() {
     } else {
         statusBtn.classList.remove('keys-configured');
         statusBtn.classList.add('keys-missing');
-        statusText.textContent = "API Key Required";
+        statusText.textContent = "Set Up Your Free API Key";
     }
 }
 
@@ -281,44 +282,7 @@ function initPersonaHandlers() {
         setTimeout(() => inferBtn.click(), 300);
     });
 
-    // 3.5 Export/Import Profile JSON
-    document.getElementById('btn-export-profile').addEventListener('click', () => {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.profile, null, 2));
-        const downloadAnchor = document.createElement('a');
-        downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute("download", `Master_Persona_${state.profile.contact.fullname?.replace(/\s+/g, '_') || 'Profile'}.json`);
-        document.body.appendChild(downloadAnchor);
-        downloadAnchor.click();
-        downloadAnchor.remove();
-    });
-
-    const fileInput = document.getElementById('file-import-input');
-    document.getElementById('btn-import-profile').addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const parsed = JSON.parse(event.target.result);
-                if (parsed.contact && parsed.experience && parsed.projects) {
-                    state.profile = parsed;
-                    saveProfileToLocalStorage();
-                    populateFormsFromState();
-                    renderAllPersonaLists();
-                    alert('Profile JSON imported successfully!');
-                } else {
-                    alert('Invalid JSON file format. Make sure it is a valid ResuTailor profile.');
-                }
-            } catch (err) {
-                alert(`Error parsing JSON: ${err.message}`);
-            }
-        };
-        reader.readAsText(file);
-    });
-
-    // 3.6 Import from Resume PDF (client-side text extraction + AI parsing)
+    // 3.5 Import from Resume PDF (client-side text extraction + AI parsing)
     const pdfImportBtn = document.getElementById('btn-import-resume-pdf');
     const pdfInput = document.getElementById('resume-pdf-input');
 
@@ -375,7 +339,7 @@ function initPersonaHandlers() {
         }
     });
 
-    // 3.7 CRUD Actions for List Sections (Education, Experience, Projects)
+    // 3.6 CRUD Actions for List Sections (Education, Experience, Projects)
     document.getElementById('btn-add-education').addEventListener('click', () => openItemEditor('education', null));
     document.getElementById('btn-add-experience').addEventListener('click', () => openItemEditor('experience', null));
     document.getElementById('btn-add-project').addEventListener('click', () => openItemEditor('projects', null));
@@ -997,6 +961,24 @@ function initSupportBanner() {
         } catch {
             prompt('Copy the UPI ID below:', upiId);
         }
+    });
+}
+
+// Renders a scannable UPI QR code entirely client-side (no third-party QR API, no network call)
+function renderSupportQR() {
+    const container = document.getElementById('upi-qr-code');
+    if (!container || !window.QRCode) return;
+
+    const upiId = document.getElementById('upi-id-text').textContent.trim();
+    const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&cu=INR`;
+
+    new window.QRCode(container, {
+        text: upiUri,
+        width: 168,
+        height: 168,
+        colorDark: '#0f172a',
+        colorLight: '#ffffff',
+        correctLevel: window.QRCode.CorrectLevel.M
     });
 }
 

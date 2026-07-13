@@ -228,11 +228,7 @@ body.dark-mode {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-}
-
-.keys-missing .status-dot {
-    background-color: var(--danger);
-    box-shadow: 0 0 8px var(--danger);
+    flex-shrink: 0;
 }
 
 .keys-configured .status-dot {
@@ -242,6 +238,60 @@ body.dark-mode {
 
 .api-status-btn:hover {
     border-color: var(--accent-purple);
+}
+
+/* Prominent "do this first" state before a key is configured */
+.api-btn-badge,
+.api-btn-arrow {
+    display: none;
+}
+
+.api-status-btn.keys-missing {
+    padding: 14px 16px;
+    background: linear-gradient(135deg, rgba(20, 184, 166, 0.22) 0%, rgba(139, 92, 246, 0.22) 100%);
+    border: 1.5px solid var(--accent-teal);
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 0.88rem;
+    animation: apiKeyPulse 2.4s ease-in-out infinite;
+}
+
+.api-status-btn.keys-missing .status-dot {
+    display: none;
+}
+
+.api-status-btn.keys-missing .api-btn-badge {
+    display: inline-flex;
+    align-items: center;
+    background: var(--accent-teal);
+    color: #04201c;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    padding: 3px 8px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+.api-status-btn.keys-missing .api-btn-arrow {
+    display: block;
+    width: 15px;
+    height: 15px;
+    margin-left: auto;
+    color: var(--accent-teal);
+    flex-shrink: 0;
+}
+
+.api-status-btn.keys-missing:hover {
+    border-color: var(--accent-teal);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(20, 184, 166, 0.3);
+}
+
+@keyframes apiKeyPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(20, 184, 166, 0.35); }
+    50% { box-shadow: 0 0 0 7px rgba(20, 184, 166, 0); }
 }
 
 .footer-credit {
@@ -283,6 +333,14 @@ body.dark-mode {
     position: relative;
 }
 
+.view-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
 .view-title {
     font-family: var(--font-title);
     font-size: 2rem;
@@ -296,12 +354,10 @@ body.dark-mode {
 }
 
 .header-actions {
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
     display: flex;
+    align-items: center;
     gap: 12px;
+    flex-shrink: 0;
 }
 
 /* Buttons System */
@@ -1627,8 +1683,23 @@ body.dark-mode {
     color: var(--text-primary);
 }
 
+.upi-qr-wrapper {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0 12px;
+}
+
+.upi-qr-code {
+    background: #ffffff;
+    padding: 14px;
+    border-radius: var(--radius-md);
+    display: inline-block;
+    line-height: 0;
+    box-shadow: var(--shadow-glow);
+}
+
 .support-upi {
-    margin-top: 14px;
+    margin-top: 10px;
     text-align: center;
     font-size: 0.85rem;
     color: var(--text-secondary);

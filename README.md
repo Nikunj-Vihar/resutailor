@@ -8,12 +8,14 @@ See [implementation_plan.md](implementation_plan.md) for the full architecture a
 
 ```
 .
-├── index.html          # Entry point / page structure for all views
+├── index.html               # Entry point / page structure for all views
 ├── css/
-│   └── styles.css      # All styling, incl. print/@media styles for PDF export
+│   └── styles.css           # All styling, incl. print/@media styles for PDF export
 ├── js/
-│   ├── app.js           # App controller: routing, state, DOM handlers
-│   └── gemini.js         # Gemini REST API wrapper (tech-stack inference, tailoring)
+│   ├── app.js                # App controller: routing, state, DOM handlers
+│   ├── gemini.js              # Gemini REST API wrapper (tech-stack inference, tailoring)
+│   └── vendor-qrcode.min.js    # Self-hosted QR renderer for the UPI tip code (MIT, davidshimjs/qrcodejs)
+├── CHANGELOG.md
 └── implementation_plan.md
 ```
 
@@ -43,6 +45,10 @@ On the **My Persona** page, click **Import from Resume (PDF)** to upload a text-
 
 - **Content Security Policy** restricts scripts, styles, and network calls to self-hosted code, the two pinned CDNs, and the Gemini API endpoint only.
 - **Subresource Integrity (SRI)**: both CDN scripts (Lucide, pdf.js) are version-pinned with sha384 integrity hashes — a tampered CDN file will refuse to load.
-- **Output escaping**: all user-entered and AI-generated content is HTML-escaped before rendering, preventing script injection via imported JSON files, uploaded resumes, or hostile job descriptions.
+- **Output escaping**: all user-entered and AI-generated content is HTML-escaped before rendering, preventing script injection via uploaded resumes or hostile job descriptions.
 - **API key handling**: the Gemini key is sent via the `x-goog-api-key` request header (never in URLs, where it could leak into logs) and stays in your browser.
 - **Model selection**: no Gemini model name is hardcoded. On save, the app lists the models your key actually has access to and picks the best available flash model, caching the choice. If that model is later retired by Google, the next request automatically re-resolves and retries — the app doesn't need a code update every time Google rotates models.
+
+## Versioning
+
+Releases are tagged in git (`v1.0.0`, `v1.1.0`, ...). See [CHANGELOG.md](CHANGELOG.md) for what changed in each release.

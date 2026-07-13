@@ -59,11 +59,13 @@
 
             <div class="sidebar-footer">
                 <button id="btn-api-settings" class="api-status-btn keys-missing">
+                    <span class="api-btn-badge">Step 1</span>
                     <span class="status-dot"></span>
-                    <span class="status-text">API Key Required</span>
+                    <span class="status-text">Set Up Your Free API Key</span>
+                    <i data-lucide="arrow-right" class="api-btn-arrow"></i>
                 </button>
                 <div class="footer-credit">
-                    <p>Secured Client-Side Only</p>
+                    <p>Secured Client-Side Only &middot; v1.0.0</p>
                 </div>
             </div>
         </aside>
@@ -149,24 +151,17 @@
             <!-- View: My Persona -->
             <section id="persona-view" class="view-panel">
                 <div class="view-header">
-                    <h2 class="view-title">Master Persona</h2>
-                    <p class="view-subtitle">Enter all your experiences and achievements here. The AI will draw from this pool of data.</p>
-                    <div class="header-actions">
-                        <button id="btn-import-resume-pdf" class="btn btn-accent btn-icon">
-                            <i data-lucide="file-up"></i>
-                            <span>Import from Resume (PDF)</span>
-                        </button>
-                        <button id="btn-export-profile" class="btn btn-secondary btn-icon">
-                            <i data-lucide="download"></i>
-                            <span>Export Profile JSON</span>
-                        </button>
-                        <button id="btn-import-profile" class="btn btn-secondary btn-icon">
-                            <i data-lucide="upload"></i>
-                            <span>Import Profile JSON</span>
-                        </button>
-                        <input type="file" id="file-import-input" accept=".json" style="display: none;">
-                        <input type="file" id="resume-pdf-input" accept=".pdf,.txt" style="display: none;">
+                    <div class="view-header-top">
+                        <h2 class="view-title">Master Persona</h2>
+                        <div class="header-actions">
+                            <button id="btn-import-resume-pdf" class="btn btn-accent btn-icon">
+                                <i data-lucide="file-up"></i>
+                                <span>Import from Resume (PDF)</span>
+                            </button>
+                            <input type="file" id="resume-pdf-input" accept=".pdf,.txt" style="display: none;">
+                        </div>
                     </div>
+                    <p class="view-subtitle">Enter all your experiences and achievements here. The AI will draw from this pool of data.</p>
                 </div>
 
                 <div class="persona-layout">
@@ -354,18 +349,20 @@
             <!-- View: Preview & Export -->
             <section id="preview-view" class="view-panel">
                 <div class="view-header print-hidden">
-                    <h2 class="view-title">Resume Preview</h2>
-                    <p class="view-subtitle">Review the tailored resume and download your print-ready, ATS-friendly PDF.</p>
-                    <div class="header-actions">
-                        <button id="btn-back-to-tailor" class="btn btn-secondary btn-icon">
-                            <i data-lucide="arrow-left"></i>
-                            <span>Edit Description</span>
-                        </button>
-                        <button id="btn-print-resume" class="btn btn-accent btn-icon btn-lg">
-                            <i data-lucide="printer"></i>
-                            <span>Print / Save as PDF</span>
-                        </button>
+                    <div class="view-header-top">
+                        <h2 class="view-title">Resume Preview</h2>
+                        <div class="header-actions">
+                            <button id="btn-back-to-tailor" class="btn btn-secondary btn-icon">
+                                <i data-lucide="arrow-left"></i>
+                                <span>Edit Description</span>
+                            </button>
+                            <button id="btn-print-resume" class="btn btn-accent btn-icon btn-lg">
+                                <i data-lucide="printer"></i>
+                                <span>Print / Save as PDF</span>
+                            </button>
+                        </div>
                     </div>
+                    <p class="view-subtitle">Review the tailored resume and download your print-ready, ATS-friendly PDF.</p>
                 </div>
 
                 <div id="support-banner" class="support-banner print-hidden" style="display: none;">
@@ -430,11 +427,13 @@
                         <div class="pricing-badge badge-accent">Entirely Optional</div>
                         <h3>Did ResuTailor help you? ❤️</h3>
                         <p class="pricing-desc">If this tool helped you land an interview or saved you an evening of formatting, you can thank the creator with a small tip. It unlocks nothing — the tool stays fully free either way. Your kind words and shares mean just as much!</p>
-                        <a class="btn btn-accent btn-block" href="upi://pay?pa=nikunj0903@okhdfcbank&pn=Nikunj&cu=INR">📱 Tip via UPI App (mobile)</a>
+                        <div class="upi-qr-wrapper">
+                            <div id="upi-qr-code" class="upi-qr-code"></div>
+                        </div>
+                        <p class="support-upi">Scan with GPay, PhonePe, Paytm, or any UPI app</p>
                         <p class="support-upi">UPI ID: <strong id="upi-id-text">nikunj0903@okhdfcbank</strong>
                             <button id="btn-copy-upi" class="btn btn-secondary btn-sm" style="margin-left: 8px;">Copy UPI ID</button>
                         </p>
-                        <p class="support-upi" style="font-size: 0.78rem;">Works with GPay, PhonePe, Paytm, or any UPI app.</p>
                     </div>
                 </div>
             </section>
@@ -492,6 +491,8 @@
             </div>
         </div>
     </div>
+    <!-- Self-hosted QR code renderer (davidshimjs/qrcodejs, MIT) — generates the UPI QR entirely client-side -->
+    <script src="js/vendor-qrcode.min.js"></script>
     <script type="module" src="js/app.js"></script>
 </body>
 </html>
