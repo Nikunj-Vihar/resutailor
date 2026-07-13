@@ -100,6 +100,60 @@ export async function inferTechStack(apiKey, profileData) {
 }
 
 /**
+ * Parses raw resume text (extracted from an uploaded PDF) into the structured profile schema
+ * @param {string} apiKey
+ * @param {string} resumeText
+ * @returns {Promise<any>}
+ */
+export async function parseResumeText(apiKey, resumeText) {
+    const prompt = `
+    You are a resume parser. Below is raw text extracted from a resume PDF (formatting and line breaks may be messy or out of order).
+    Extract the person's details into a structured JSON profile.
+
+    Rules:
+    1. Extract ONLY information actually present in the text. Never invent or embellish details.
+    2. If a field is not found, use an empty string "" (or an empty array [] for lists).
+    3. For experience and project bullet points, preserve the original achievement statements as closely as possible, one string per bullet.
+    4. Periods/durations should be kept in their original format (e.g. "May 2023 - July 2023").
+    5. Classify skills into languages / frameworks / databases / custom (DevOps, cloud, tools, methodologies) groups.
+
+    Output strictly a JSON object matching this exact schema:
+    {
+      "contact": {
+        "fullname": "Full name",
+        "email": "Email address",
+        "phone": "Phone number",
+        "location": "City, Country",
+        "linkedin": "LinkedIn URL if present",
+        "github": "GitHub or portfolio URL if present"
+      },
+      "education": [
+        { "degree": "Degree and major", "institution": "School name", "location": "City, Country", "period": "Dates attended", "gpa": "GPA/percentage if stated" }
+      ],
+      "experience": [
+        { "role": "Job title", "company": "Company name", "location": "City, Country", "period": "Duration", "bullets": ["achievement 1", "achievement 2"] }
+      ],
+      "projects": [
+        { "name": "Project name", "tech": "Comma-separated technologies", "period": "Duration if stated", "bullets": ["highlight 1", "highlight 2"] }
+      ],
+      "skills": {
+        "languages": ["programming languages"],
+        "frameworks": ["frameworks & libraries"],
+        "databases": ["databases & data tools"],
+        "custom": ["other tools, cloud, methodologies"]
+      }
+    }
+
+    Raw resume text:
+    ---
+    ${resumeText}
+    ---
+    `;
+
+    return callGeminiJSON(apiKey, prompt);
+}
+
+/**
  * Tailors the user's master profile to match a job description
  * @param {string} apiKey 
  * @param {any} profileData 

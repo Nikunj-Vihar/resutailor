@@ -1,10 +1,9 @@
 /* ResuTailor - Main Application Logic */
-import { validateApiKey, inferTechStack, tailorResume } from './gemini.js';
+import { validateApiKey, inferTechStack, tailorResume, parseResumeText } from './gemini.js';
 
 // Application State
 let state = {
     apiKey: localStorage.getItem('resutailor_api_key') || '',
-    licenseKey: localStorage.getItem('resutailor_license_key') || '',
     profile: JSON.parse(localStorage.getItem('resutailor_profile')) || {
         contact: { fullname: '', email: '', phone: '', location: '', linkedin: '', github: '' },
         education: [],
@@ -27,12 +26,6 @@ function saveApiKey(key) {
     updateApiStatusUI();
 }
 
-function saveLicense(key) {
-    state.licenseKey = key;
-    localStorage.setItem('resutailor_license_key', key);
-    updatePremiumUI();
-}
-
 // Initialize Page
 document.addEventListener('DOMContentLoaded', () => {
     // Nav Routing
@@ -50,13 +43,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Preview Screen Settings
     initPreviewHandlers();
     
-    // License verification
-    initLicenseHandlers();
-    
+    // Support banner (free tool, optional gratitude tip)
+    initSupportBanner();
+
+    // Clean up license data from the old subscription model
+    localStorage.removeItem('resutailor_license_key');
+
     // Initial UI Syncs
     updateApiStatusUI();
     updateDashboardStats();
-    updatePremiumUI();
     renderAllPersonaLists();
     populateFormsFromState();
     
@@ -312,10 +307,133 @@ function initPersonaHandlers() {
         reader.readAsText(file);
     });
 
-    // 3.6 CRUD Actions for List Sections (Education, Experience, Projects)
+    // 3.6 Import from Resume PDF (client-side text extraction + AI parsing)
+    const pdfImportBtn = document.getElementById('btn-import-resume-pdf');
+    const pdfInput = document.getElementById('resume-pdf-input');
+
+    pdfImportBtn.addEventListener('click', () => {
+        if (!state.apiKey) {
+            alert('Importing from a PDF uses AI parsing. Please configure your Gemini API key first.');
+            document.getElementById('btn-api-settings').click();
+            return;
+        }
+        pdfInput.click();
+    });
+
+    pdfInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        e.target.value = ''; // allow re-selecting the same file later
+        if (!file) return;
+
+        const hasExistingData = state.profile.contact.fullname ||
+            state.profile.experience.length > 0 || state.profile.projects.length > 0;
+        if (hasExistingData && !confirm('Importing will replace your current Persona details with data extracted from this resume. Continue?')) {
+            return;
+        }
+
+        pdfImportBtn.disabled = true;
+        const origHTML = pdfImportBtn.innerHTML;
+        pdfImportBtn.innerHTML = `<i data-lucide="loader" class="spin"></i> <span>Extracting & Parsing...</span>`;
+        if (window.lucide) window.lucide.createIcons();
+
+        try {
+            let rawText;
+            if (file.name.toLowerCase().endsWith('.pdf')) {
+                rawText = await extractPdfText(file);
+            } else {
+                rawText = await file.text();
+            }
+
+            if (!rawText || rawText.trim().length < 50) {
+                throw new Error('Could not extract readable text. If your PDF is a scanned image, export a text-based PDF instead or fill in the forms manually.');
+            }
+
+            const parsed = await parseResumeText(state.apiKey, rawText);
+            applyParsedResume(parsed);
+
+            saveProfileToLocalStorage();
+            populateFormsFromState();
+            renderAllPersonaLists();
+            alert('Resume imported! Review each tab to verify the extracted details, then save any corrections.');
+        } catch (err) {
+            alert(`Resume import failed: ${err.message}`);
+        } finally {
+            pdfImportBtn.disabled = false;
+            pdfImportBtn.innerHTML = origHTML;
+            if (window.lucide) window.lucide.createIcons();
+        }
+    });
+
+    // 3.7 CRUD Actions for List Sections (Education, Experience, Projects)
     document.getElementById('btn-add-education').addEventListener('click', () => openItemEditor('education', null));
     document.getElementById('btn-add-experience').addEventListener('click', () => openItemEditor('experience', null));
     document.getElementById('btn-add-project').addEventListener('click', () => openItemEditor('projects', null));
+}
+
+// Extracts selectable text from a PDF file entirely in-browser using pdf.js
+async function extractPdfText(file) {
+    const pdfjsLib = window.pdfjsLib;
+    if (!pdfjsLib) {
+        throw new Error('PDF library not loaded yet. Check your internet connection and try again.');
+    }
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    const buffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+
+    let fullText = '';
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const content = await page.getTextContent();
+        fullText += content.items.map(item => item.str).join(' ') + '\n';
+    }
+    return fullText;
+}
+
+// Maps the AI-parsed resume JSON onto the internal profile shape
+// (bullets stored as newline-joined strings, skills as comma-separated strings)
+function applyParsedResume(parsed) {
+    const joinBullets = (bullets) => Array.isArray(bullets) ? bullets.join('\n') : (bullets || '');
+    const joinSkills = (arr) => Array.isArray(arr) ? arr.join(', ') : (arr || '');
+
+    state.profile.contact = {
+        fullname: parsed.contact?.fullname || '',
+        email: parsed.contact?.email || '',
+        phone: parsed.contact?.phone || '',
+        location: parsed.contact?.location || '',
+        linkedin: parsed.contact?.linkedin || '',
+        github: parsed.contact?.github || ''
+    };
+
+    state.profile.education = (parsed.education || []).map(edu => ({
+        degree: edu.degree || '',
+        institution: edu.institution || '',
+        location: edu.location || '',
+        period: edu.period || '',
+        gpa: edu.gpa || ''
+    }));
+
+    state.profile.experience = (parsed.experience || []).map(exp => ({
+        role: exp.role || '',
+        company: exp.company || '',
+        location: exp.location || '',
+        period: exp.period || '',
+        bullets: joinBullets(exp.bullets)
+    }));
+
+    state.profile.projects = (parsed.projects || []).map(proj => ({
+        name: proj.name || '',
+        tech: proj.tech || '',
+        period: proj.period || '',
+        bullets: joinBullets(proj.bullets)
+    }));
+
+    state.profile.skills = {
+        languages: joinSkills(parsed.skills?.languages),
+        frameworks: joinSkills(parsed.skills?.frameworks),
+        databases: joinSkills(parsed.skills?.databases),
+        custom: joinSkills(parsed.skills?.custom)
+    };
 }
 
 function populateFormsFromState() {
@@ -799,6 +917,9 @@ function renderResumePreview() {
     
     if (projSec) projSec.style.display = showProjects ? 'block' : 'none';
     if (skillSec) skillSec.style.display = showSkills ? 'block' : 'none';
+
+    // The user has a generated resume in front of them — gently mention support
+    showSupportBannerIfNotDismissed();
 }
 
 // 6. GENERAL DASHBOARD METRICS
@@ -837,72 +958,27 @@ function updateDashboardStats() {
     }
 }
 
-// 7. SUBSCRIPTIONS & LICENSING
-function initLicenseHandlers() {
-    const buyMockButtons = document.querySelectorAll('.btn-buy-mock');
-    const verifyBtn = document.getElementById('btn-verify-license');
-    const licenseInput = document.getElementById('input-license-key');
-    const msgEl = document.getElementById('license-msg');
+// 7. SUPPORT BANNER (free tool — optional gratitude tip)
+const SUPPORT_BANNER_DISMISS_KEY = 'resutailor_support_banner_dismissed';
 
-    buyMockButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const tier = btn.getAttribute('data-tier');
-            const mockKey = `${tier.toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`;
-            alert(`Mock Purchase Successful!\nYour ${tier} license key is: ${mockKey}\nPaste it below to activate premium features.`);
-            licenseInput.value = mockKey;
-        });
+function initSupportBanner() {
+    const banner = document.getElementById('support-banner');
+    const supportBtn = document.getElementById('btn-banner-support');
+    const dismissBtn = document.getElementById('btn-banner-dismiss');
+
+    supportBtn.addEventListener('click', () => {
+        document.querySelector('.sidebar-nav .nav-btn[data-target="support-view"]').click();
     });
 
-    verifyBtn.addEventListener('click', () => {
-        const key = licenseInput.value.trim();
-        msgEl.className = 'license-status-message';
-        
-        if (!key) {
-            msgEl.textContent = "Please enter a key.";
-            msgEl.classList.add('error');
-            return;
-        }
-
-        // Verification logic (starts with YEARLY- or LIFETIME- or mock purchase verification)
-        const regex = /^(YEARLY|LIFETIME)-\d{4}-\d{4}$/;
-        if (regex.test(key) || key.toUpperCase() === 'PREMIUM-TEST') {
-            saveLicense(key);
-            msgEl.textContent = "Success! Premium templates unlocked.";
-            msgEl.classList.add('success');
-            updatePremiumUI();
-        } else {
-            msgEl.textContent = "Invalid license key format. Keys should look like YEARLY-XXXX-XXXX.";
-            msgEl.classList.add('error');
-        }
+    dismissBtn.addEventListener('click', () => {
+        banner.style.display = 'none';
+        localStorage.setItem(SUPPORT_BANNER_DISMISS_KEY, 'true');
     });
-
-    if (state.licenseKey) {
-        licenseInput.value = state.licenseKey;
-    }
 }
 
-function updatePremiumUI() {
-    const isPremium = state.licenseKey && (/^(YEARLY|LIFETIME)-\d{4}-\d{4}$/.test(state.licenseKey) || state.licenseKey.toUpperCase() === 'PREMIUM-TEST');
-    const premiumBtn = document.querySelector('.sidebar-nav .nav-btn-premium');
-    const badge = document.querySelector('.brand-badge');
-
-    if (isPremium) {
-        badge.textContent = "Premium Activated";
-        badge.style.color = "var(--accent-pink)";
-        if (premiumBtn) {
-            premiumBtn.innerHTML = `<i data-lucide="shield-check"></i><span>Premium Active</span>`;
-            premiumBtn.style.background = 'linear-gradient(135deg, rgba(20, 184, 166, 0.1) 0%, rgba(20, 184, 166, 0.02) 100%)';
-            premiumBtn.style.borderColor = 'rgba(20, 184, 166, 0.3)';
-            premiumBtn.querySelector('i').style.color = 'var(--accent-teal)';
-        }
-    } else {
-        badge.textContent = "Student Edition";
-        badge.style.color = "var(--accent-teal)";
-        if (premiumBtn) {
-            premiumBtn.innerHTML = `<i data-lucide="crown"></i><span>Go Premium</span>`;
-            premiumBtn.style.background = '';
-            premiumBtn.style.borderColor = '';
-        }
-    }
+function showSupportBannerIfNotDismissed() {
+    if (localStorage.getItem(SUPPORT_BANNER_DISMISS_KEY) === 'true') return;
+    const banner = document.getElementById('support-banner');
+    banner.style.display = 'flex';
     if (window.lucide) window.lucide.createIcons();
 }

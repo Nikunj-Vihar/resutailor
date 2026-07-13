@@ -30,6 +30,10 @@ python3 -m http.server 8080
 
 Deploy as-is to GitHub Pages, Vercel, or Netlify — zero build configuration needed.
 
+## Importing an Existing Resume
+
+On the **My Persona** page, click **Import from Resume (PDF)** to upload a text-based PDF (or .txt file). The text is extracted in-browser via [pdf.js](https://mozilla.github.io/pdf.js/) and parsed into your structured profile by Gemini — nothing is uploaded to any server other than Google's Gemini API. Scanned/image-only PDFs are not supported (no OCR).
+
 ## Data & Privacy
 
 - Your Gemini API key, profile data, and generated resumes are stored only in your browser's `localStorage`.

@@ -10,6 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- PDF.js for client-side resume text extraction -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body class="dark-mode">
@@ -43,9 +45,9 @@
                     <i data-lucide="printer"></i>
                     <span>Preview & Export</span>
                 </button>
-                <button class="nav-btn nav-btn-premium" data-target="subscription-view">
-                    <i data-lucide="crown"></i>
-                    <span>Go Premium</span>
+                <button class="nav-btn nav-btn-premium" data-target="support-view">
+                    <i data-lucide="heart"></i>
+                    <span>Support the Creator</span>
                 </button>
             </nav>
 
@@ -144,6 +146,10 @@
                     <h2 class="view-title">Master Persona</h2>
                     <p class="view-subtitle">Enter all your experiences and achievements here. The AI will draw from this pool of data.</p>
                     <div class="header-actions">
+                        <button id="btn-import-resume-pdf" class="btn btn-accent btn-icon">
+                            <i data-lucide="file-up"></i>
+                            <span>Import from Resume (PDF)</span>
+                        </button>
                         <button id="btn-export-profile" class="btn btn-secondary btn-icon">
                             <i data-lucide="download"></i>
                             <span>Export Profile JSON</span>
@@ -153,6 +159,7 @@
                             <span>Import Profile JSON</span>
                         </button>
                         <input type="file" id="file-import-input" accept=".json" style="display: none;">
+                        <input type="file" id="resume-pdf-input" accept=".pdf,.txt" style="display: none;">
                     </div>
                 </div>
 
@@ -355,6 +362,12 @@
                     </div>
                 </div>
 
+                <div id="support-banner" class="support-banner print-hidden" style="display: none;">
+                    <i data-lucide="heart" class="support-banner-icon"></i>
+                    <p>Enjoying ResuTailor? It's free forever — but if it brought you value, you can <button id="btn-banner-support" class="link-btn">support the creator</button> as a small thank-you. 🙏</p>
+                    <button id="btn-banner-dismiss" class="banner-dismiss" aria-label="Dismiss">&times;</button>
+                </div>
+
                 <div class="preview-workspace">
                     <div class="preview-options print-hidden">
                         <h3>Template Options</h3>
@@ -388,59 +401,32 @@
                 </div>
             </section>
 
-            <!-- View: Go Premium -->
-            <section id="subscription-view" class="view-panel">
+            <!-- View: Support the Creator -->
+            <section id="support-view" class="view-panel">
                 <div class="view-header">
-                    <h2 class="view-title">Unlock Premium Support</h2>
-                    <p class="view-subtitle">ResuTailor is completely free for local use. Support our development to unlock template upgrades and custom formatting!</p>
+                    <h2 class="view-title">ResuTailor is 100% Free</h2>
+                    <p class="view-subtitle">No subscriptions, no locked features, no catch. Every feature is yours, forever.</p>
                 </div>
 
                 <div class="pricing-container">
                     <div class="pricing-card">
-                        <div class="pricing-badge">Popular</div>
-                        <h3>Student Yearly</h3>
-                        <div class="price">
-                            <span class="currency">₹</span>
-                            <span class="amount">999</span>
-                            <span class="period">/ year</span>
-                        </div>
-                        <p class="pricing-desc">Perfect for university students going through placement seasons.</p>
+                        <h3>Why is it free?</h3>
+                        <p class="pricing-desc">ResuTailor runs entirely in your browser using your own free Gemini API key, so it costs nothing to operate — and that saving is passed on to you. It was built to help students and job-seekers put their best foot forward without yet another paywall in the way.</p>
                         <ul class="pricing-features">
-                            <li><i data-lucide="check"></i> Unlimited Tailored Resumes</li>
-                            <li><i data-lucide="check"></i> Premium ATS templates</li>
-                            <li><i data-lucide="check"></i> Multi-page styling modes</li>
-                            <li><i data-lucide="check"></i> Priority prompt optimizations</li>
+                            <li><i data-lucide="check"></i> Unlimited tailored resumes</li>
+                            <li><i data-lucide="check"></i> All templates & export options</li>
+                            <li><i data-lucide="check"></i> Resume PDF import & AI tech-stack analysis</li>
+                            <li><i data-lucide="check"></i> Your data never leaves your browser</li>
                         </ul>
-                        <button class="btn btn-primary btn-block btn-buy-mock" data-tier="Yearly">Activate Now</button>
                     </div>
 
                     <div class="pricing-card premium-card">
-                        <div class="pricing-badge badge-accent">Best Value</div>
-                        <h3>Lifetime Access</h3>
-                        <div class="price">
-                            <span class="currency">₹</span>
-                            <span class="amount">6,999</span>
-                            <span class="period">/ once</span>
-                        </div>
-                        <p class="pricing-desc">One-time payment for continuous access during internships and job switches.</p>
-                        <ul class="pricing-features">
-                            <li><i data-lucide="check"></i> Everything in Yearly</li>
-                            <li><i data-lucide="check"></i> Lifetime updates & templates</li>
-                            <li><i data-lucide="check"></i> Direct JSON syncing support</li>
-                            <li><i data-lucide="check"></i> Ad-free forever</li>
-                        </ul>
-                        <button class="btn btn-accent btn-block btn-buy-mock" data-tier="Lifetime">Go Lifetime</button>
+                        <div class="pricing-badge badge-accent">Entirely Optional</div>
+                        <h3>Did ResuTailor help you? ❤️</h3>
+                        <p class="pricing-desc">If this tool helped you land an interview or saved you an evening of formatting, you can thank the creator with a small tip. It unlocks nothing — the tool stays fully free either way. Your kind words and shares mean just as much!</p>
+                        <a class="btn btn-accent btn-block" href="https://buymeacoffee.com/YOUR-USERNAME" target="_blank" rel="noopener">☕ Buy me a coffee</a>
+                        <p class="support-upi">or tip via UPI: <strong>your-upi-id@bank</strong></p>
                     </div>
-                </div>
-
-                <div class="license-entry-box">
-                    <h3>Already have a subscription license key?</h3>
-                    <p>Enter your Gumroad / Stripe license key below to unlock premium presets.</p>
-                    <div class="license-input-group">
-                        <input type="text" id="input-license-key" placeholder="XXXX-XXXX-XXXX-XXXX">
-                        <button id="btn-verify-license" class="btn btn-secondary">Activate Key</button>
-                    </div>
-                    <p id="license-msg" class="license-status-message"></p>
                 </div>
             </section>
         </main>
