@@ -10,10 +10,11 @@ const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/
 export async function validateApiKey(apiKey) {
     if (!apiKey) return false;
     try {
-        const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+        const response = await fetch(GEMINI_API_URL, {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "x-goog-api-key": apiKey
             },
             body: JSON.stringify({
                 contents: [{
@@ -40,10 +41,11 @@ async function callGeminiJSON(apiKey, prompt) {
     }
     
     try {
-        const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+        const response = await fetch(GEMINI_API_URL, {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "x-goog-api-key": apiKey
             },
             body: JSON.stringify({
                 contents: [{

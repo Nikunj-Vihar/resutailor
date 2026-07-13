@@ -14,6 +14,17 @@ let state = {
     tailoredResume: JSON.parse(localStorage.getItem('resutailor_tailored')) || null
 };
 
+// Escapes a value for safe interpolation into innerHTML templates
+// (element text and double-quoted attribute values)
+function esc(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 // State Managers / Save Helpers
 function saveProfileToLocalStorage() {
     localStorage.setItem('resutailor_profile', JSON.stringify(state.profile));
@@ -493,9 +504,9 @@ function renderPersonaList(section, elementId) {
 
         itemEl.innerHTML = `
             <div class="item-content">
-                <h4>${titleText}</h4>
-                <div class="item-meta">${subtitleText}</div>
-                <p style="font-size: 0.85rem; color: var(--text-secondary); white-space: pre-line;">${descText}</p>
+                <h4>${esc(titleText)}</h4>
+                <div class="item-meta">${esc(subtitleText)}</div>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); white-space: pre-line;">${esc(descText)}</p>
             </div>
             <div class="item-actions">
                 <button class="btn-icon-only btn-edit" data-section="${section}" data-index="${index}"><i data-lucide="edit-2" style="width: 14px; height: 14px;"></i></button>
@@ -544,65 +555,65 @@ function openItemEditor(section, index) {
         html += `
             <div class="form-group">
                 <label for="edit-edu-degree">Degree / Major</label>
-                <input type="text" id="edit-edu-degree" value="${data.degree || ''}" placeholder="e.g. B.Tech in Computer Science" required>
+                <input type="text" id="edit-edu-degree" value="${esc(data.degree)}" placeholder="e.g. B.Tech in Computer Science" required>
             </div>
             <div class="form-group">
                 <label for="edit-edu-institution">Institution / School</label>
-                <input type="text" id="edit-edu-institution" value="${data.institution || ''}" placeholder="e.g. BITS Pilani" required>
+                <input type="text" id="edit-edu-institution" value="${esc(data.institution)}" placeholder="e.g. BITS Pilani" required>
             </div>
             <div class="form-group">
                 <label for="edit-edu-location">Location (City, Country)</label>
-                <input type="text" id="edit-edu-location" value="${data.location || ''}" placeholder="e.g. Hyderabad, India">
+                <input type="text" id="edit-edu-location" value="${esc(data.location)}" placeholder="e.g. Hyderabad, India">
             </div>
             <div class="form-group">
                 <label for="edit-edu-period">Attending Period</label>
-                <input type="text" id="edit-edu-period" value="${data.period || ''}" placeholder="e.g. 2021 - 2025" required>
+                <input type="text" id="edit-edu-period" value="${esc(data.period)}" placeholder="e.g. 2021 - 2025" required>
             </div>
             <div class="form-group">
                 <label for="edit-edu-gpa">GPA or Marks Details</label>
-                <input type="text" id="edit-edu-gpa" value="${data.gpa || ''}" placeholder="e.g. 9.1 CGPA, 92%">
+                <input type="text" id="edit-edu-gpa" value="${esc(data.gpa)}" placeholder="e.g. 9.1 CGPA, 92%">
             </div>
         `;
     } else if (section === 'experience') {
         html += `
             <div class="form-group">
                 <label for="edit-exp-role">Job Title / Role</label>
-                <input type="text" id="edit-exp-role" value="${data.role || ''}" placeholder="e.g. Software Development Intern" required>
+                <input type="text" id="edit-exp-role" value="${esc(data.role)}" placeholder="e.g. Software Development Intern" required>
             </div>
             <div class="form-group">
                 <label for="edit-exp-company">Company Name</label>
-                <input type="text" id="edit-exp-company" value="${data.company || ''}" placeholder="e.g. Microsoft" required>
+                <input type="text" id="edit-exp-company" value="${esc(data.company)}" placeholder="e.g. Microsoft" required>
             </div>
             <div class="form-group">
                 <label for="edit-exp-location">Location (City, Country)</label>
-                <input type="text" id="edit-exp-location" value="${data.location || ''}" placeholder="e.g. Bengaluru, India">
+                <input type="text" id="edit-exp-location" value="${esc(data.location)}" placeholder="e.g. Bengaluru, India">
             </div>
             <div class="form-group">
                 <label for="edit-exp-period">Working Period</label>
-                <input type="text" id="edit-exp-period" value="${data.period || ''}" placeholder="e.g. May 2023 - July 2023" required>
+                <input type="text" id="edit-exp-period" value="${esc(data.period)}" placeholder="e.g. May 2023 - July 2023" required>
             </div>
             <div class="form-group">
                 <label for="edit-exp-bullets">Achievements / Bullet points (one per line)</label>
-                <textarea id="edit-exp-bullets" rows="6" placeholder="Built a responsive dashboard using React, speeding up data load by 20%&#10;Collaborated with 3 engineers to debug routing issues" required>${data.bullets || ''}</textarea>
+                <textarea id="edit-exp-bullets" rows="6" placeholder="Built a responsive dashboard using React, speeding up data load by 20%&#10;Collaborated with 3 engineers to debug routing issues" required>${esc(data.bullets)}</textarea>
             </div>
         `;
     } else if (section === 'projects') {
         html += `
             <div class="form-group">
                 <label for="edit-proj-name">Project Name</label>
-                <input type="text" id="edit-proj-name" value="${data.name || ''}" placeholder="e.g. Distributed Key-Value Store" required>
+                <input type="text" id="edit-proj-name" value="${esc(data.name)}" placeholder="e.g. Distributed Key-Value Store" required>
             </div>
             <div class="form-group">
                 <label for="edit-proj-tech">Technologies Used (Comma-separated)</label>
-                <input type="text" id="edit-proj-tech" value="${data.tech || ''}" placeholder="e.g. Go, gRPC, Docker, Kubernetes">
+                <input type="text" id="edit-proj-tech" value="${esc(data.tech)}" placeholder="e.g. Go, gRPC, Docker, Kubernetes">
             </div>
             <div class="form-group">
                 <label for="edit-proj-period">Project Duration / Month</label>
-                <input type="text" id="edit-proj-period" value="${data.period || ''}" placeholder="e.g. Jan 2024 - Feb 2024">
+                <input type="text" id="edit-proj-period" value="${esc(data.period)}" placeholder="e.g. Jan 2024 - Feb 2024">
             </div>
             <div class="form-group">
                 <label for="edit-proj-bullets">Project Highlights (one per line)</label>
-                <textarea id="edit-proj-bullets" rows="6" placeholder="Implemented Raft consensus algorithm for zero-data-loss consistency&#10;Designed key range replication partitioning" required>${data.bullets || ''}</textarea>
+                <textarea id="edit-proj-bullets" rows="6" placeholder="Implemented Raft consensus algorithm for zero-data-loss consistency&#10;Designed key range replication partitioning" required>${esc(data.bullets)}</textarea>
             </div>
         `;
     }
@@ -805,26 +816,26 @@ function renderResumePreview() {
 
     // Build components
     let contactInfo = state.profile.contact;
-    let emailStr = contactInfo.email ? `<span>Email: ${contactInfo.email}</span>` : '';
-    let phoneStr = contactInfo.phone ? `<span>Phone: ${contactInfo.phone}</span>` : '';
-    let locStr = contactInfo.location ? `<span>Loc: ${contactInfo.location}</span>` : '';
-    let linkStr = contactInfo.linkedin ? `<span>LinkedIn: ${contactInfo.linkedin}</span>` : '';
-    let gitStr = contactInfo.github ? `<span>GitHub: ${contactInfo.github}</span>` : '';
+    let emailStr = contactInfo.email ? `<span>Email: ${esc(contactInfo.email)}</span>` : '';
+    let phoneStr = contactInfo.phone ? `<span>Phone: ${esc(contactInfo.phone)}</span>` : '';
+    let locStr = contactInfo.location ? `<span>Loc: ${esc(contactInfo.location)}</span>` : '';
+    let linkStr = contactInfo.linkedin ? `<span>LinkedIn: ${esc(contactInfo.linkedin)}</span>` : '';
+    let gitStr = contactInfo.github ? `<span>GitHub: ${esc(contactInfo.github)}</span>` : '';
     
     let skillsObj = data.skills || { languages: [], frameworks: [], databases: [], custom: [] };
 
     let expHTML = data.experience?.map(exp => `
         <div class="resume-item">
             <div class="resume-item-header">
-                <span>${exp.role}</span>
-                <span>${exp.period}</span>
+                <span>${esc(exp.role)}</span>
+                <span>${esc(exp.period)}</span>
             </div>
             <div class="resume-item-subheader">
-                <span>${exp.company}</span>
-                <span>${exp.location || ''}</span>
+                <span>${esc(exp.company)}</span>
+                <span>${esc(exp.location)}</span>
             </div>
             <ul class="resume-item-bullets">
-                ${exp.bullets?.map(b => `<li>${b}</li>`).join('')}
+                ${exp.bullets?.map(b => `<li>${esc(b)}</li>`).join('')}
             </ul>
         </div>
     `).join('') || '';
@@ -832,14 +843,14 @@ function renderResumePreview() {
     let projHTML = data.projects?.map(proj => `
         <div class="resume-item">
             <div class="resume-item-header">
-                <span>${proj.name}</span>
-                <span>${proj.period || ''}</span>
+                <span>${esc(proj.name)}</span>
+                <span>${esc(proj.period)}</span>
             </div>
             <div class="resume-item-subheader">
-                <span>Tech Stack: ${proj.tech || ''}</span>
+                <span>Tech Stack: ${esc(proj.tech)}</span>
             </div>
             <ul class="resume-item-bullets">
-                ${proj.bullets?.map(b => `<li>${b}</li>`).join('')}
+                ${proj.bullets?.map(b => `<li>${esc(b)}</li>`).join('')}
             </ul>
         </div>
     `).join('') || '';
@@ -847,19 +858,19 @@ function renderResumePreview() {
     let eduHTML = data.education?.map(edu => `
         <div class="resume-item">
             <div class="resume-item-header">
-                <span>${edu.degree}</span>
-                <span>${edu.period}</span>
+                <span>${esc(edu.degree)}</span>
+                <span>${esc(edu.period)}</span>
             </div>
             <div class="resume-item-subheader">
-                <span>${edu.institution}</span>
-                <span>${edu.location || ''} ${edu.gpa ? '| GPA: ' + edu.gpa : ''}</span>
+                <span>${esc(edu.institution)}</span>
+                <span>${esc(edu.location)} ${edu.gpa ? '| GPA: ' + esc(edu.gpa) : ''}</span>
             </div>
         </div>
     `).join('') || '';
 
     sheet.innerHTML = `
         <header class="resume-header">
-            <div class="resume-name">${contactInfo.fullname || 'Master Persona'}</div>
+            <div class="resume-name">${esc(contactInfo.fullname) || 'Master Persona'}</div>
             <div class="resume-meta">
                 ${emailStr}
                 ${phoneStr}
@@ -872,17 +883,17 @@ function renderResumePreview() {
         ${data.summary ? `
         <section class="resume-section">
             <div class="resume-section-title">Summary</div>
-            <p style="font-size: 12.5px; color: #334155; text-align: justify;">${data.summary}</p>
+            <p style="font-size: 12.5px; color: #334155; text-align: justify;\">${esc(data.summary)}</p>
         </section>
         ` : ''}
 
         <section class="resume-section sec-skills">
             <div class="resume-section-title">Technical Skills</div>
             <div class="resume-skills-block">
-                ${skillsObj.languages?.length > 0 ? `<div class="resume-skill-line"><strong>Languages:</strong> ${skillsObj.languages.join(', ')}</div>` : ''}
-                ${skillsObj.frameworks?.length > 0 ? `<div class="resume-skill-line"><strong>Frameworks & Libraries:</strong> ${skillsObj.frameworks.join(', ')}</div>` : ''}
-                ${skillsObj.databases?.length > 0 ? `<div class="resume-skill-line"><strong>Databases & Tools:</strong> ${skillsObj.databases.join(', ')}</div>` : ''}
-                ${skillsObj.custom?.length > 0 ? `<div class="resume-skill-line"><strong>Other Technologies:</strong> ${skillsObj.custom.join(', ')}</div>` : ''}
+                ${skillsObj.languages?.length > 0 ? `<div class="resume-skill-line"><strong>Languages:</strong> ${esc(skillsObj.languages.join(', '))}</div>` : ''}
+                ${skillsObj.frameworks?.length > 0 ? `<div class="resume-skill-line"><strong>Frameworks & Libraries:</strong> ${esc(skillsObj.frameworks.join(', '))}</div>` : ''}
+                ${skillsObj.databases?.length > 0 ? `<div class="resume-skill-line"><strong>Databases & Tools:</strong> ${esc(skillsObj.databases.join(', '))}</div>` : ''}
+                ${skillsObj.custom?.length > 0 ? `<div class="resume-skill-line"><strong>Other Technologies:</strong> ${esc(skillsObj.custom.join(', '))}</div>` : ''}
             </div>
         </section>
 
@@ -973,6 +984,19 @@ function initSupportBanner() {
     dismissBtn.addEventListener('click', () => {
         banner.style.display = 'none';
         localStorage.setItem(SUPPORT_BANNER_DISMISS_KEY, 'true');
+    });
+
+    // Copy UPI ID on the support page
+    const copyUpiBtn = document.getElementById('btn-copy-upi');
+    copyUpiBtn.addEventListener('click', async () => {
+        const upiId = document.getElementById('upi-id-text').textContent;
+        try {
+            await navigator.clipboard.writeText(upiId);
+            copyUpiBtn.textContent = 'Copied!';
+            setTimeout(() => { copyUpiBtn.textContent = 'Copy UPI ID'; }, 2000);
+        } catch {
+            prompt('Copy the UPI ID below:', upiId);
+        }
     });
 }
 

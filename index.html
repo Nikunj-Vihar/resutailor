@@ -3,15 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Content Security Policy: only self-hosted code, pinned CDNs, and the Gemini API may load/run -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://cdnjs.cloudflare.com blob:; worker-src 'self' blob: https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://generativelanguage.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
     <title>ResuTailor — Zero-Cost AI Resume Editor</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- PDF.js for client-side resume text extraction -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
+    <!-- Lucide Icons (version-pinned with subresource integrity) -->
+    <script src="https://unpkg.com/lucide@1.24.0/dist/umd/lucide.min.js"
+            integrity="sha384-mooE85Luwgx+AyykX7e90VcN8/QCFTSIwPuHLmvcsLVoA0en7lKYb9XlOzn5G2co"
+            crossorigin="anonymous"></script>
+    <!-- PDF.js for client-side resume text extraction (version-pinned with subresource integrity) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
+            integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e"
+            crossorigin="anonymous" defer></script>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body class="dark-mode">
@@ -424,8 +430,11 @@
                         <div class="pricing-badge badge-accent">Entirely Optional</div>
                         <h3>Did ResuTailor help you? ❤️</h3>
                         <p class="pricing-desc">If this tool helped you land an interview or saved you an evening of formatting, you can thank the creator with a small tip. It unlocks nothing — the tool stays fully free either way. Your kind words and shares mean just as much!</p>
-                        <a class="btn btn-accent btn-block" href="https://buymeacoffee.com/YOUR-USERNAME" target="_blank" rel="noopener">☕ Buy me a coffee</a>
-                        <p class="support-upi">or tip via UPI: <strong>your-upi-id@bank</strong></p>
+                        <a class="btn btn-accent btn-block" href="upi://pay?pa=nikunj0903@okhdfcbank&pn=Nikunj&cu=INR">📱 Tip via UPI App (mobile)</a>
+                        <p class="support-upi">UPI ID: <strong id="upi-id-text">nikunj0903@okhdfcbank</strong>
+                            <button id="btn-copy-upi" class="btn btn-secondary btn-sm" style="margin-left: 8px;">Copy UPI ID</button>
+                        </p>
+                        <p class="support-upi" style="font-size: 0.78rem;">Works with GPay, PhonePe, Paytm, or any UPI app.</p>
                     </div>
                 </div>
             </section>
