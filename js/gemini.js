@@ -1,6 +1,7 @@
 /* ResuTailor - Gemini API Integration Service */
 
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+// Uses the "-latest" alias so the app keeps working as Google retires/rotates specific model versions
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
 
 /**
  * Checks if the API key is valid by making a simple request
