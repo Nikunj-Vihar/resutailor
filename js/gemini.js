@@ -1,29 +1,76 @@
 /* ResuTailor - Gemini API Integration Service */
 
-// Uses the "-latest" alias so the app keeps working as Google retires/rotates specific model versions
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
+const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
+const MODEL_CACHE_KEY = "resutailor_gemini_model";
 
 /**
- * Checks if the API key is valid by making a simple request
- * @param {string} apiKey 
+ * Picks the best usable model from a key's available model list: prefers the
+ * floating "-latest" flash alias (so future Google model rotations don't break
+ * the app), then any stable flash model, then any model that supports
+ * generateContent at all. Every API key can have a different set of models
+ * available depending on account tier/region, so this is resolved per-key
+ * rather than hardcoded.
+ * @param {any[]} models
+ * @returns {any|null}
+ */
+function pickBestModel(models) {
+    const usable = models.filter(m => (m.supportedGenerationMethods || []).includes("generateContent"));
+    const byName = (name) => usable.find(m => m.name === `models/${name}`);
+    const isPreviewish = (m) => /preview|exp|tts|image|robotics|computer-use|deep-research|lyria|banana/i.test(m.name);
+
+    return (
+        byName("gemini-flash-latest") ||
+        usable.find(m => /flash/i.test(m.name) && !isPreviewish(m)) ||
+        usable.find(m => !isPreviewish(m)) ||
+        usable[0] ||
+        null
+    );
+}
+
+/**
+ * Resolves which model to use for a given API key by asking Gemini's
+ * ListModels endpoint, caching the result so we don't re-list on every call.
+ * @param {string} apiKey
+ * @param {{forceRefresh?: boolean}} [options]
+ * @returns {Promise<string>} bare model name, e.g. "gemini-flash-latest"
+ */
+async function resolveModel(apiKey, { forceRefresh = false } = {}) {
+    if (!forceRefresh) {
+        const cached = localStorage.getItem(MODEL_CACHE_KEY);
+        if (cached) return cached;
+    }
+
+    const response = await fetch(`${GEMINI_BASE_URL}/models`, {
+        headers: { "x-goog-api-key": apiKey }
+    });
+
+    if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error?.message || `Could not list Gemini models (HTTP ${response.status}).`);
+    }
+
+    const data = await response.json();
+    const best = pickBestModel(data.models || []);
+    if (!best) {
+        throw new Error("This API key has no models available that support content generation.");
+    }
+
+    const modelName = best.name.replace(/^models\//, "");
+    localStorage.setItem(MODEL_CACHE_KEY, modelName);
+    return modelName;
+}
+
+/**
+ * Checks if the API key is valid by listing the models it can access.
+ * Also resolves and caches which model to use for this key.
+ * @param {string} apiKey
  * @returns {Promise<boolean>}
  */
 export async function validateApiKey(apiKey) {
     if (!apiKey) return false;
     try {
-        const response = await fetch(GEMINI_API_URL, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "x-goog-api-key": apiKey
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{ text: "Hello" }]
-                }]
-            })
-        });
-        return response.ok;
+        const modelName = await resolveModel(apiKey, { forceRefresh: true });
+        return !!modelName;
     } catch (e) {
         console.error("API Key validation error:", e);
         return false;
@@ -31,32 +78,45 @@ export async function validateApiKey(apiKey) {
 }
 
 /**
- * Sends a prompt to the Gemini API expecting a JSON response
- * @param {string} apiKey 
- * @param {string} prompt 
+ * Sends a prompt to the Gemini API expecting a JSON response. Automatically
+ * resolves the best available model for this key, and if the cached model
+ * has since been retired (404), re-resolves and retries once.
+ * @param {string} apiKey
+ * @param {string} prompt
  * @returns {Promise<any>}
  */
 async function callGeminiJSON(apiKey, prompt) {
     if (!apiKey) {
         throw new Error("Gemini API Key is missing. Please configure it in Settings.");
     }
-    
+
+    const requestBody = JSON.stringify({
+        contents: [{
+            parts: [{ text: prompt }]
+        }],
+        generationConfig: {
+            responseMimeType: "application/json"
+        }
+    });
+
+    const attempt = async (modelName) => fetch(`${GEMINI_BASE_URL}/models/${modelName}:generateContent`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey
+        },
+        body: requestBody
+    });
+
     try {
-        const response = await fetch(GEMINI_API_URL, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "x-goog-api-key": apiKey
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{ text: prompt }]
-                }],
-                generationConfig: {
-                    responseMimeType: "application/json"
-                }
-            })
-        });
+        let modelName = await resolveModel(apiKey);
+        let response = await attempt(modelName);
+
+        if (response.status === 404) {
+            // Cached model was retired/renamed since we last resolved it — re-resolve and retry once
+            modelName = await resolveModel(apiKey, { forceRefresh: true });
+            response = await attempt(modelName);
+        }
 
         if (!response.ok) {
             const errData = await response.json().catch(() => ({}));
@@ -66,11 +126,11 @@ async function callGeminiJSON(apiKey, prompt) {
 
         const data = await response.json();
         const jsonText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        
+
         if (!jsonText) {
             throw new Error("Received empty response from Gemini API.");
         }
-        
+
         return JSON.parse(jsonText.trim());
     } catch (e) {
         console.error("Gemini API execution failed:", e);
