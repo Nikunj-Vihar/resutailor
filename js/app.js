@@ -1,0 +1,908 @@
+/* ResuTailor - Main Application Logic */
+import { validateApiKey, inferTechStack, tailorResume } from './gemini.js';
+
+// Application State
+let state = {
+    apiKey: localStorage.getItem('resutailor_api_key') || '',
+    licenseKey: localStorage.getItem('resutailor_license_key') || '',
+    profile: JSON.parse(localStorage.getItem('resutailor_profile')) || {
+        contact: { fullname: '', email: '', phone: '', location: '', linkedin: '', github: '' },
+        education: [],
+        experience: [],
+        projects: [],
+        skills: { languages: '', frameworks: '', databases: '', custom: '' }
+    },
+    tailoredResume: JSON.parse(localStorage.getItem('resutailor_tailored')) || null
+};
+
+// State Managers / Save Helpers
+function saveProfileToLocalStorage() {
+    localStorage.setItem('resutailor_profile', JSON.stringify(state.profile));
+    updateDashboardStats();
+}
+
+function saveApiKey(key) {
+    state.apiKey = key;
+    localStorage.setItem('resutailor_api_key', key);
+    updateApiStatusUI();
+}
+
+function saveLicense(key) {
+    state.licenseKey = key;
+    localStorage.setItem('resutailor_license_key', key);
+    updatePremiumUI();
+}
+
+// Initialize Page
+document.addEventListener('DOMContentLoaded', () => {
+    // Nav Routing
+    initNavigation();
+    
+    // API Modal Handlers
+    initApiSettingsHandlers();
+    
+    // Persona Forms & Tab Handlers
+    initPersonaHandlers();
+    
+    // Tailor Operations
+    initTailorHandlers();
+    
+    // Preview Screen Settings
+    initPreviewHandlers();
+    
+    // License verification
+    initLicenseHandlers();
+    
+    // Initial UI Syncs
+    updateApiStatusUI();
+    updateDashboardStats();
+    updatePremiumUI();
+    renderAllPersonaLists();
+    populateFormsFromState();
+    
+    if (state.tailoredResume) {
+        renderResumePreview();
+    }
+    
+    // Trigger Lucide icons replacement
+    if (window.lucide) {
+        window.lucide.createIcons();
+    }
+});
+
+// 1. NAVIGATION & VIEW ROUTING
+function initNavigation() {
+    const navButtons = document.querySelectorAll('.sidebar-nav .nav-btn, #btn-api-settings');
+    const viewPanels = document.querySelectorAll('.view-panel');
+    
+    navButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const targetId = btn.getAttribute('data-target');
+            if (!targetId) return; // Wait if it doesn't navigate directly (like API button which opens modal)
+            
+            // Toggle active button
+            navButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            // Toggle active view panel
+            viewPanels.forEach(panel => panel.classList.remove('active'));
+            document.getElementById(targetId).classList.add('active');
+            
+            // Run special rendering hooks if entering specific panels
+            if (targetId === 'dashboard-view') {
+                updateDashboardStats();
+            } else if (targetId === 'preview-view' && state.tailoredResume) {
+                renderResumePreview();
+            }
+        });
+    });
+
+    // Get Started button on dashboard
+    document.getElementById('btn-dashboard-start').addEventListener('click', () => {
+        const nextButton = document.querySelector('.sidebar-nav .nav-btn[data-target="persona-view"]');
+        if (nextButton) nextButton.click();
+    });
+}
+
+// 2. API KEY HANDLERS & MODAL MANAGEMENT
+function initApiSettingsHandlers() {
+    const apiBtn = document.getElementById('btn-api-settings');
+    const apiModal = document.getElementById('modal-api-settings');
+    const closeBtn = document.getElementById('btn-close-api-modal');
+    const saveBtn = document.getElementById('btn-save-api-key');
+    const apiKeyInput = document.getElementById('input-api-key');
+
+    // Open modal
+    apiBtn.addEventListener('click', () => {
+        apiKeyInput.value = state.apiKey;
+        apiModal.classList.add('active');
+    });
+
+    // Close modal
+    closeBtn.addEventListener('click', () => apiModal.classList.remove('active'));
+    apiModal.addEventListener('click', (e) => {
+        if (e.target === apiModal) apiModal.classList.remove('active');
+    });
+
+    // Save key
+    saveBtn.addEventListener('click', async () => {
+        const inputKey = apiKeyInput.value.trim();
+        saveBtn.disabled = true;
+        saveBtn.textContent = "Verifying...";
+        
+        if (!inputKey) {
+            saveApiKey('');
+            alert('API key cleared.');
+            saveBtn.disabled = false;
+            saveBtn.textContent = "Save API Key";
+            apiModal.classList.remove('active');
+            return;
+        }
+
+        const isValid = await validateApiKey(inputKey);
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Save API Key";
+
+        if (isValid) {
+            saveApiKey(inputKey);
+            apiModal.classList.remove('active');
+            alert('Gemini API key verified and saved successfully!');
+        } else {
+            alert('Invalid API key. Please check your key and try again.');
+        }
+    });
+}
+
+function updateApiStatusUI() {
+    const statusBtn = document.getElementById('btn-api-settings');
+    const statusDot = statusBtn.querySelector('.status-dot');
+    const statusText = statusBtn.querySelector('.status-text');
+    
+    if (state.apiKey) {
+        statusBtn.classList.remove('keys-missing');
+        statusBtn.classList.add('keys-configured');
+        statusText.textContent = "Gemini Key Configured";
+    } else {
+        statusBtn.classList.remove('keys-configured');
+        statusBtn.classList.add('keys-missing');
+        statusText.textContent = "API Key Required";
+    }
+}
+
+// 3. MASTER PERSONA STATE & FORMS
+function initPersonaHandlers() {
+    // 3.1 Profile tab switching
+    const tabButtons = document.querySelectorAll('.tab-container .tab-btn');
+    const tabPanels = document.querySelectorAll('.tab-container .tab-panel');
+    
+    tabButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            tabButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            const targetTab = btn.getAttribute('data-tab');
+            tabPanels.forEach(panel => {
+                if (panel.id === targetTab) {
+                    panel.classList.add('active');
+                } else {
+                    panel.classList.remove('active');
+                }
+            });
+        });
+    });
+
+    // 3.2 Contact Form Submit
+    const contactForm = document.getElementById('form-contact');
+    contactForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        state.profile.contact = {
+            fullname: document.getElementById('contact-fullname').value.trim(),
+            email: document.getElementById('contact-email').value.trim(),
+            phone: document.getElementById('contact-phone').value.trim(),
+            location: document.getElementById('contact-location').value.trim(),
+            linkedin: document.getElementById('contact-linkedin').value.trim(),
+            github: document.getElementById('contact-github').value.trim()
+        };
+        saveProfileToLocalStorage();
+        alert('Contact information saved successfully!');
+    });
+
+    // 3.3 Skills Form Submit
+    const skillsForm = document.getElementById('form-skills');
+    skillsForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        state.profile.skills = {
+            languages: document.getElementById('skills-languages').value.trim(),
+            frameworks: document.getElementById('skills-frameworks').value.trim(),
+            databases: document.getElementById('skills-databases').value.trim(),
+            custom: document.getElementById('skills-custom').value.trim()
+        };
+        saveProfileToLocalStorage();
+        alert('Skills list updated!');
+    });
+
+    // 3.4 Infer Skills using Gemini Button
+    const inferBtn = document.getElementById('btn-trigger-ai-tech');
+    inferBtn.addEventListener('click', async () => {
+        if (!state.apiKey) {
+            alert("Please configure a Gemini API key first before using AI functions.");
+            document.getElementById('btn-api-settings').click();
+            return;
+        }
+
+        inferBtn.disabled = true;
+        const origText = inferBtn.innerHTML;
+        inferBtn.innerHTML = `<i data-lucide="loader" class="spin"></i> <span>Analyzing Persona...</span>`;
+        if (window.lucide) window.lucide.createIcons();
+
+        try {
+            const result = await inferTechStack(state.apiKey, {
+                experience: state.profile.experience,
+                projects: state.profile.projects,
+                education: state.profile.education
+            });
+
+            if (result) {
+                document.getElementById('skills-languages').value = result.languages?.join(', ') || '';
+                document.getElementById('skills-frameworks').value = result.frameworks?.join(', ') || '';
+                document.getElementById('skills-databases').value = result.databases?.join(', ') || '';
+                document.getElementById('skills-custom').value = result.custom?.join(', ') || '';
+                
+                // Trigger save
+                state.profile.skills = {
+                    languages: result.languages?.join(', ') || '',
+                    frameworks: result.frameworks?.join(', ') || '',
+                    databases: result.databases?.join(', ') || '',
+                    custom: result.custom?.join(', ') || ''
+                };
+                saveProfileToLocalStorage();
+                alert("AI successfully inferred your tech stack from experiences and projects!");
+            }
+        } catch (err) {
+            alert(`Error analyzing: ${err.message}`);
+        } finally {
+            inferBtn.disabled = false;
+            inferBtn.innerHTML = origText;
+            if (window.lucide) window.lucide.createIcons();
+        }
+    });
+
+    // Re-analyze on Dashboard
+    const dashboardReanalyzeBtn = document.getElementById('btn-analyze-tech');
+    dashboardReanalyzeBtn.addEventListener('click', () => {
+        document.querySelector('.tab-btn[data-tab="skills-tab"]').click();
+        document.querySelector('.sidebar-nav .nav-btn[data-target="persona-view"]').click();
+        setTimeout(() => inferBtn.click(), 300);
+    });
+
+    // 3.5 Export/Import Profile JSON
+    document.getElementById('btn-export-profile').addEventListener('click', () => {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.profile, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", `Master_Persona_${state.profile.contact.fullname?.replace(/\s+/g, '_') || 'Profile'}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    });
+
+    const fileInput = document.getElementById('file-import-input');
+    document.getElementById('btn-import-profile').addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const parsed = JSON.parse(event.target.result);
+                if (parsed.contact && parsed.experience && parsed.projects) {
+                    state.profile = parsed;
+                    saveProfileToLocalStorage();
+                    populateFormsFromState();
+                    renderAllPersonaLists();
+                    alert('Profile JSON imported successfully!');
+                } else {
+                    alert('Invalid JSON file format. Make sure it is a valid ResuTailor profile.');
+                }
+            } catch (err) {
+                alert(`Error parsing JSON: ${err.message}`);
+            }
+        };
+        reader.readAsText(file);
+    });
+
+    // 3.6 CRUD Actions for List Sections (Education, Experience, Projects)
+    document.getElementById('btn-add-education').addEventListener('click', () => openItemEditor('education', null));
+    document.getElementById('btn-add-experience').addEventListener('click', () => openItemEditor('experience', null));
+    document.getElementById('btn-add-project').addEventListener('click', () => openItemEditor('projects', null));
+}
+
+function populateFormsFromState() {
+    // Contact
+    document.getElementById('contact-fullname').value = state.profile.contact.fullname || '';
+    document.getElementById('contact-email').value = state.profile.contact.email || '';
+    document.getElementById('contact-phone').value = state.profile.contact.phone || '';
+    document.getElementById('contact-location').value = state.profile.contact.location || '';
+    document.getElementById('contact-linkedin').value = state.profile.contact.linkedin || '';
+    document.getElementById('contact-github').value = state.profile.contact.github || '';
+
+    // Skills
+    document.getElementById('skills-languages').value = state.profile.skills.languages || '';
+    document.getElementById('skills-frameworks').value = state.profile.skills.frameworks || '';
+    document.getElementById('skills-databases').value = state.profile.skills.databases || '';
+    document.getElementById('skills-custom').value = state.profile.skills.custom || '';
+}
+
+// Renders list managers
+function renderAllPersonaLists() {
+    renderPersonaList('education', 'education-list');
+    renderPersonaList('experience', 'experience-list');
+    renderPersonaList('projects', 'projects-list');
+}
+
+function renderPersonaList(section, elementId) {
+    const listContainer = document.getElementById(elementId);
+    listContainer.innerHTML = '';
+    const items = state.profile[section] || [];
+
+    if (items.length === 0) {
+        listContainer.innerHTML = `<p class="placeholder-tag">No entries yet. Click "Add" below to add details.</p>`;
+        return;
+    }
+
+    items.forEach((item, index) => {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'manager-item';
+        
+        let titleText = '';
+        let subtitleText = '';
+        let descText = '';
+
+        if (section === 'education') {
+            titleText = item.degree;
+            subtitleText = `${item.institution} | ${item.location} (${item.period})`;
+            descText = item.gpa ? `GPA/Percentage: ${item.gpa}` : '';
+        } else if (section === 'experience') {
+            titleText = item.role;
+            subtitleText = `${item.company} | ${item.location} (${item.period})`;
+            descText = item.bullets ? item.bullets.split('\n').map(b => '• ' + b).join('\n') : '';
+        } else if (section === 'projects') {
+            titleText = item.name;
+            subtitleText = `${item.tech ? 'Tech: ' + item.tech : ''} (${item.period})`;
+            descText = item.bullets ? item.bullets.split('\n').map(b => '• ' + b).join('\n') : '';
+        }
+
+        itemEl.innerHTML = `
+            <div class="item-content">
+                <h4>${titleText}</h4>
+                <div class="item-meta">${subtitleText}</div>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); white-space: pre-line;">${descText}</p>
+            </div>
+            <div class="item-actions">
+                <button class="btn-icon-only btn-edit" data-section="${section}" data-index="${index}"><i data-lucide="edit-2" style="width: 14px; height: 14px;"></i></button>
+                <button class="btn-icon-only btn-delete" data-section="${section}" data-index="${index}"><i data-lucide="trash-2" style="width: 14px; height: 14px;"></i></button>
+            </div>
+        `;
+
+        // Register edit/delete actions
+        itemEl.querySelector('.btn-edit').addEventListener('click', () => openItemEditor(section, index));
+        itemEl.querySelector('.btn-delete').addEventListener('click', () => deleteItem(section, index));
+
+        listContainer.appendChild(itemEl);
+    });
+
+    if (window.lucide) window.lucide.createIcons();
+}
+
+function deleteItem(section, index) {
+    if (confirm("Are you sure you want to delete this entry?")) {
+        state.profile[section].splice(index, 1);
+        saveProfileToLocalStorage();
+        renderAllPersonaLists();
+    }
+}
+
+// Item Editor Modal CRUD popup
+let activeEditorIndex = null;
+let activeEditorSection = null;
+
+function openItemEditor(section, index) {
+    activeEditorSection = section;
+    activeEditorIndex = index;
+
+    const modal = document.getElementById('modal-item-editor');
+    const titleEl = document.getElementById('item-editor-title');
+    const bodyEl = document.getElementById('item-editor-body');
+
+    titleEl.textContent = `${index !== null ? 'Edit' : 'Add'} ${section.charAt(0).toUpperCase() + section.slice(1, -1)}`;
+    bodyEl.innerHTML = '';
+
+    const data = index !== null ? state.profile[section][index] : {};
+
+    // Render corresponding input elements
+    let html = `<div class="modal-grid-form">`;
+    if (section === 'education') {
+        html += `
+            <div class="form-group">
+                <label for="edit-edu-degree">Degree / Major</label>
+                <input type="text" id="edit-edu-degree" value="${data.degree || ''}" placeholder="e.g. B.Tech in Computer Science" required>
+            </div>
+            <div class="form-group">
+                <label for="edit-edu-institution">Institution / School</label>
+                <input type="text" id="edit-edu-institution" value="${data.institution || ''}" placeholder="e.g. BITS Pilani" required>
+            </div>
+            <div class="form-group">
+                <label for="edit-edu-location">Location (City, Country)</label>
+                <input type="text" id="edit-edu-location" value="${data.location || ''}" placeholder="e.g. Hyderabad, India">
+            </div>
+            <div class="form-group">
+                <label for="edit-edu-period">Attending Period</label>
+                <input type="text" id="edit-edu-period" value="${data.period || ''}" placeholder="e.g. 2021 - 2025" required>
+            </div>
+            <div class="form-group">
+                <label for="edit-edu-gpa">GPA or Marks Details</label>
+                <input type="text" id="edit-edu-gpa" value="${data.gpa || ''}" placeholder="e.g. 9.1 CGPA, 92%">
+            </div>
+        `;
+    } else if (section === 'experience') {
+        html += `
+            <div class="form-group">
+                <label for="edit-exp-role">Job Title / Role</label>
+                <input type="text" id="edit-exp-role" value="${data.role || ''}" placeholder="e.g. Software Development Intern" required>
+            </div>
+            <div class="form-group">
+                <label for="edit-exp-company">Company Name</label>
+                <input type="text" id="edit-exp-company" value="${data.company || ''}" placeholder="e.g. Microsoft" required>
+            </div>
+            <div class="form-group">
+                <label for="edit-exp-location">Location (City, Country)</label>
+                <input type="text" id="edit-exp-location" value="${data.location || ''}" placeholder="e.g. Bengaluru, India">
+            </div>
+            <div class="form-group">
+                <label for="edit-exp-period">Working Period</label>
+                <input type="text" id="edit-exp-period" value="${data.period || ''}" placeholder="e.g. May 2023 - July 2023" required>
+            </div>
+            <div class="form-group">
+                <label for="edit-exp-bullets">Achievements / Bullet points (one per line)</label>
+                <textarea id="edit-exp-bullets" rows="6" placeholder="Built a responsive dashboard using React, speeding up data load by 20%&#10;Collaborated with 3 engineers to debug routing issues" required>${data.bullets || ''}</textarea>
+            </div>
+        `;
+    } else if (section === 'projects') {
+        html += `
+            <div class="form-group">
+                <label for="edit-proj-name">Project Name</label>
+                <input type="text" id="edit-proj-name" value="${data.name || ''}" placeholder="e.g. Distributed Key-Value Store" required>
+            </div>
+            <div class="form-group">
+                <label for="edit-proj-tech">Technologies Used (Comma-separated)</label>
+                <input type="text" id="edit-proj-tech" value="${data.tech || ''}" placeholder="e.g. Go, gRPC, Docker, Kubernetes">
+            </div>
+            <div class="form-group">
+                <label for="edit-proj-period">Project Duration / Month</label>
+                <input type="text" id="edit-proj-period" value="${data.period || ''}" placeholder="e.g. Jan 2024 - Feb 2024">
+            </div>
+            <div class="form-group">
+                <label for="edit-proj-bullets">Project Highlights (one per line)</label>
+                <textarea id="edit-proj-bullets" rows="6" placeholder="Implemented Raft consensus algorithm for zero-data-loss consistency&#10;Designed key range replication partitioning" required>${data.bullets || ''}</textarea>
+            </div>
+        `;
+    }
+    html += `</div>`;
+    bodyEl.innerHTML = html;
+
+    // Show modal
+    modal.classList.add('active');
+
+    // Register Save and Close
+    const saveItemBtn = document.getElementById('btn-save-item-entry');
+    const closeItemBtn = document.getElementById('btn-close-editor-modal');
+
+    const handleSave = () => {
+        let entry = {};
+        if (section === 'education') {
+            entry = {
+                degree: document.getElementById('edit-edu-degree').value.trim(),
+                institution: document.getElementById('edit-edu-institution').value.trim(),
+                location: document.getElementById('edit-edu-location').value.trim(),
+                period: document.getElementById('edit-edu-period').value.trim(),
+                gpa: document.getElementById('edit-edu-gpa').value.trim()
+            };
+        } else if (section === 'experience') {
+            entry = {
+                role: document.getElementById('edit-exp-role').value.trim(),
+                company: document.getElementById('edit-exp-company').value.trim(),
+                location: document.getElementById('edit-exp-location').value.trim(),
+                period: document.getElementById('edit-exp-period').value.trim(),
+                bullets: document.getElementById('edit-exp-bullets').value.trim()
+            };
+        } else if (section === 'projects') {
+            entry = {
+                name: document.getElementById('edit-proj-name').value.trim(),
+                tech: document.getElementById('edit-proj-tech').value.trim(),
+                period: document.getElementById('edit-proj-period').value.trim(),
+                bullets: document.getElementById('edit-proj-bullets').value.trim()
+            };
+        }
+
+        // Validate basic parameters
+        if (!entry[Object.keys(entry)[0]] || !entry[Object.keys(entry)[1]]) {
+            alert('Please fill out the required primary fields.');
+            return;
+        }
+
+        if (index !== null) {
+            state.profile[section][index] = entry;
+        } else {
+            state.profile[section].push(entry);
+        }
+
+        saveProfileToLocalStorage();
+        renderAllPersonaLists();
+        modal.classList.remove('active');
+        
+        // Clean event listeners to prevent loops
+        saveItemBtn.removeEventListener('click', handleSave);
+    };
+
+    saveItemBtn.addEventListener('click', handleSave);
+
+    const handleClose = () => {
+        modal.classList.remove('active');
+        saveItemBtn.removeEventListener('click', handleSave);
+        closeItemBtn.removeEventListener('click', handleClose);
+    };
+
+    closeItemBtn.addEventListener('click', handleClose);
+}
+
+// 4. TAILOR OPERATIONS
+function initTailorHandlers() {
+    const btnTailor = document.getElementById('btn-tailor-resume');
+    const aiLoading = document.getElementById('ai-loading');
+    const loadingTitle = document.getElementById('loading-step-title');
+    const loadingSubtitle = document.getElementById('loading-step-subtitle');
+
+    btnTailor.addEventListener('click', async () => {
+        // Validation Checks
+        if (!state.apiKey) {
+            alert('Please configure your Gemini API Key first.');
+            document.getElementById('btn-api-settings').click();
+            return;
+        }
+
+        const jobTitle = document.getElementById('job-title-input').value.trim();
+        const companyName = document.getElementById('company-name-input').value.trim();
+        const jdText = document.getElementById('jd-input').value.trim();
+        const tone = document.getElementById('tailor-tone').value;
+        const length = document.getElementById('tailor-pages').value;
+
+        if (!jobTitle || !companyName || !jdText) {
+            alert('Please fill in target job title, company name, and copy-paste the Job Description.');
+            return;
+        }
+
+        // Ensure user has profile details
+        if (state.profile.experience.length === 0 && state.profile.projects.length === 0) {
+            alert('Your Master Persona is empty! Please add experiences or projects in the "My Persona" tab first.');
+            document.querySelector('.sidebar-nav .nav-btn[data-target="persona-view"]').click();
+            return;
+        }
+
+        // Trigger Loading screen
+        aiLoading.style.display = 'flex';
+        loadingTitle.textContent = "Analyzing Job Requirements...";
+        loadingSubtitle.textContent = `Finding key skills and tech stacks requested by ${companyName}...`;
+
+        // Progress text steps
+        const steps = [
+            { text: "Tailoring profile achievements...", sub: "Mapping achievements to job qualifications using the STAR method..." },
+            { text: "Polishing bullet phrasing...", sub: "Adding active metrics and balancing professional tone..." },
+            { text: "Finalizing layout checks...", sub: "Fitting copy formatting requirements..." }
+        ];
+
+        let currentStep = 0;
+        const stepInterval = setInterval(() => {
+            if (currentStep < steps.length) {
+                loadingTitle.textContent = steps[currentStep].text;
+                loadingSubtitle.textContent = steps[currentStep].sub;
+                currentStep++;
+            }
+        }, 3500);
+
+        try {
+            const tailoredResult = await tailorResume(
+                state.apiKey,
+                state.profile,
+                jobTitle,
+                companyName,
+                jdText,
+                tone,
+                length
+            );
+
+            clearInterval(stepInterval);
+
+            if (tailoredResult) {
+                state.tailoredResume = tailoredResult;
+                localStorage.setItem('resutailor_tailored', JSON.stringify(tailoredResult));
+                
+                // Route to Preview View
+                const previewBtn = document.querySelector('.sidebar-nav .nav-btn[data-target="preview-view"]');
+                if (previewBtn) {
+                    previewBtn.click();
+                }
+            }
+        } catch (err) {
+            clearInterval(stepInterval);
+            alert(`Tailoring failed: ${err.message}`);
+        } finally {
+            aiLoading.style.display = 'none';
+        }
+    });
+}
+
+// 5. PREVIEW VIEW AND PRINT ENGINE
+function initPreviewHandlers() {
+    const sheet = document.getElementById('resume-sheet');
+    const templateButtons = document.querySelectorAll('.template-selector .template-btn');
+
+    templateButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            templateButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            const styleName = btn.getAttribute('data-style');
+            sheet.className = `resume-sheet template-${styleName}`;
+        });
+    });
+
+    // Customizer check toggles
+    document.getElementById('toggle-opt-projects').addEventListener('change', (e) => {
+        const projSec = sheet.querySelector('.sec-projects');
+        if (projSec) projSec.style.display = e.target.checked ? 'block' : 'none';
+    });
+
+    document.getElementById('toggle-opt-skills').addEventListener('change', (e) => {
+        const skillSec = sheet.querySelector('.sec-skills');
+        if (skillSec) skillSec.style.display = e.target.checked ? 'block' : 'none';
+    });
+
+    // Back to edit
+    document.getElementById('btn-back-to-tailor').addEventListener('click', () => {
+        document.querySelector('.sidebar-nav .nav-btn[data-target="tailor-view"]').click();
+    });
+
+    // Native PDF print command
+    document.getElementById('btn-print-resume').addEventListener('click', () => {
+        window.print();
+    });
+}
+
+function renderResumePreview() {
+    const sheet = document.getElementById('resume-sheet');
+    const data = state.tailoredResume;
+    
+    if (!data) return;
+
+    // Build components
+    let contactInfo = state.profile.contact;
+    let emailStr = contactInfo.email ? `<span>Email: ${contactInfo.email}</span>` : '';
+    let phoneStr = contactInfo.phone ? `<span>Phone: ${contactInfo.phone}</span>` : '';
+    let locStr = contactInfo.location ? `<span>Loc: ${contactInfo.location}</span>` : '';
+    let linkStr = contactInfo.linkedin ? `<span>LinkedIn: ${contactInfo.linkedin}</span>` : '';
+    let gitStr = contactInfo.github ? `<span>GitHub: ${contactInfo.github}</span>` : '';
+    
+    let skillsObj = data.skills || { languages: [], frameworks: [], databases: [], custom: [] };
+
+    let expHTML = data.experience?.map(exp => `
+        <div class="resume-item">
+            <div class="resume-item-header">
+                <span>${exp.role}</span>
+                <span>${exp.period}</span>
+            </div>
+            <div class="resume-item-subheader">
+                <span>${exp.company}</span>
+                <span>${exp.location || ''}</span>
+            </div>
+            <ul class="resume-item-bullets">
+                ${exp.bullets?.map(b => `<li>${b}</li>`).join('')}
+            </ul>
+        </div>
+    `).join('') || '';
+
+    let projHTML = data.projects?.map(proj => `
+        <div class="resume-item">
+            <div class="resume-item-header">
+                <span>${proj.name}</span>
+                <span>${proj.period || ''}</span>
+            </div>
+            <div class="resume-item-subheader">
+                <span>Tech Stack: ${proj.tech || ''}</span>
+            </div>
+            <ul class="resume-item-bullets">
+                ${proj.bullets?.map(b => `<li>${b}</li>`).join('')}
+            </ul>
+        </div>
+    `).join('') || '';
+
+    let eduHTML = data.education?.map(edu => `
+        <div class="resume-item">
+            <div class="resume-item-header">
+                <span>${edu.degree}</span>
+                <span>${edu.period}</span>
+            </div>
+            <div class="resume-item-subheader">
+                <span>${edu.institution}</span>
+                <span>${edu.location || ''} ${edu.gpa ? '| GPA: ' + edu.gpa : ''}</span>
+            </div>
+        </div>
+    `).join('') || '';
+
+    sheet.innerHTML = `
+        <header class="resume-header">
+            <div class="resume-name">${contactInfo.fullname || 'Master Persona'}</div>
+            <div class="resume-meta">
+                ${emailStr}
+                ${phoneStr}
+                ${locStr}
+                ${linkStr}
+                ${gitStr}
+            </div>
+        </header>
+
+        ${data.summary ? `
+        <section class="resume-section">
+            <div class="resume-section-title">Summary</div>
+            <p style="font-size: 12.5px; color: #334155; text-align: justify;">${data.summary}</p>
+        </section>
+        ` : ''}
+
+        <section class="resume-section sec-skills">
+            <div class="resume-section-title">Technical Skills</div>
+            <div class="resume-skills-block">
+                ${skillsObj.languages?.length > 0 ? `<div class="resume-skill-line"><strong>Languages:</strong> ${skillsObj.languages.join(', ')}</div>` : ''}
+                ${skillsObj.frameworks?.length > 0 ? `<div class="resume-skill-line"><strong>Frameworks & Libraries:</strong> ${skillsObj.frameworks.join(', ')}</div>` : ''}
+                ${skillsObj.databases?.length > 0 ? `<div class="resume-skill-line"><strong>Databases & Tools:</strong> ${skillsObj.databases.join(', ')}</div>` : ''}
+                ${skillsObj.custom?.length > 0 ? `<div class="resume-skill-line"><strong>Other Technologies:</strong> ${skillsObj.custom.join(', ')}</div>` : ''}
+            </div>
+        </section>
+
+        ${expHTML ? `
+        <section class="resume-section">
+            <div class="resume-section-title">Work Experience</div>
+            ${expHTML}
+        </section>
+        ` : ''}
+
+        ${projHTML ? `
+        <section class="resume-section sec-projects">
+            <div class="resume-section-title">Academic & Personal Projects</div>
+            ${projHTML}
+        </section>
+        ` : ''}
+
+        ${eduHTML ? `
+        <section class="resume-section">
+            <div class="resume-section-title">Education</div>
+            ${eduHTML}
+        </section>
+        ` : ''}
+    `;
+
+    // Sync toggle statuses
+    const showProjects = document.getElementById('toggle-opt-projects').checked;
+    const showSkills = document.getElementById('toggle-opt-skills').checked;
+    
+    const projSec = sheet.querySelector('.sec-projects');
+    const skillSec = sheet.querySelector('.sec-skills');
+    
+    if (projSec) projSec.style.display = showProjects ? 'block' : 'none';
+    if (skillSec) skillSec.style.display = showSkills ? 'block' : 'none';
+}
+
+// 6. GENERAL DASHBOARD METRICS
+function updateDashboardStats() {
+    document.getElementById('stat-experience').textContent = state.profile.experience.length;
+    document.getElementById('stat-projects').textContent = state.profile.projects.length;
+    
+    // Skill tags calculation
+    const allSkills = [
+        state.profile.skills.languages,
+        state.profile.skills.frameworks,
+        state.profile.skills.databases,
+        state.profile.skills.custom
+    ].filter(s => s?.trim() !== '');
+
+    const tagsContainer = document.getElementById('tech-tags-container');
+    tagsContainer.innerHTML = '';
+
+    const listBtn = document.getElementById('btn-analyze-tech');
+
+    if (allSkills.length > 0) {
+        let tagCount = 0;
+        allSkills.join(',').split(',').map(s => s.trim()).filter(s => s !== '').forEach(tag => {
+            const tagEl = document.createElement('span');
+            tagEl.className = 'tech-tag';
+            tagEl.textContent = tag;
+            tagsContainer.appendChild(tagEl);
+            tagCount++;
+        });
+        document.getElementById('stat-skills').textContent = tagCount;
+        listBtn.style.display = 'inline-flex';
+    } else {
+        document.getElementById('stat-skills').textContent = '0';
+        tagsContainer.innerHTML = `<span class="placeholder-tag">No tech stack detected yet. Add details in Persona.</span>`;
+        listBtn.style.display = 'none';
+    }
+}
+
+// 7. SUBSCRIPTIONS & LICENSING
+function initLicenseHandlers() {
+    const buyMockButtons = document.querySelectorAll('.btn-buy-mock');
+    const verifyBtn = document.getElementById('btn-verify-license');
+    const licenseInput = document.getElementById('input-license-key');
+    const msgEl = document.getElementById('license-msg');
+
+    buyMockButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tier = btn.getAttribute('data-tier');
+            const mockKey = `${tier.toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`;
+            alert(`Mock Purchase Successful!\nYour ${tier} license key is: ${mockKey}\nPaste it below to activate premium features.`);
+            licenseInput.value = mockKey;
+        });
+    });
+
+    verifyBtn.addEventListener('click', () => {
+        const key = licenseInput.value.trim();
+        msgEl.className = 'license-status-message';
+        
+        if (!key) {
+            msgEl.textContent = "Please enter a key.";
+            msgEl.classList.add('error');
+            return;
+        }
+
+        // Verification logic (starts with YEARLY- or LIFETIME- or mock purchase verification)
+        const regex = /^(YEARLY|LIFETIME)-\d{4}-\d{4}$/;
+        if (regex.test(key) || key.toUpperCase() === 'PREMIUM-TEST') {
+            saveLicense(key);
+            msgEl.textContent = "Success! Premium templates unlocked.";
+            msgEl.classList.add('success');
+            updatePremiumUI();
+        } else {
+            msgEl.textContent = "Invalid license key format. Keys should look like YEARLY-XXXX-XXXX.";
+            msgEl.classList.add('error');
+        }
+    });
+
+    if (state.licenseKey) {
+        licenseInput.value = state.licenseKey;
+    }
+}
+
+function updatePremiumUI() {
+    const isPremium = state.licenseKey && (/^(YEARLY|LIFETIME)-\d{4}-\d{4}$/.test(state.licenseKey) || state.licenseKey.toUpperCase() === 'PREMIUM-TEST');
+    const premiumBtn = document.querySelector('.sidebar-nav .nav-btn-premium');
+    const badge = document.querySelector('.brand-badge');
+
+    if (isPremium) {
+        badge.textContent = "Premium Activated";
+        badge.style.color = "var(--accent-pink)";
+        if (premiumBtn) {
+            premiumBtn.innerHTML = `<i data-lucide="shield-check"></i><span>Premium Active</span>`;
+            premiumBtn.style.background = 'linear-gradient(135deg, rgba(20, 184, 166, 0.1) 0%, rgba(20, 184, 166, 0.02) 100%)';
+            premiumBtn.style.borderColor = 'rgba(20, 184, 166, 0.3)';
+            premiumBtn.querySelector('i').style.color = 'var(--accent-teal)';
+        }
+    } else {
+        badge.textContent = "Student Edition";
+        badge.style.color = "var(--accent-teal)";
+        if (premiumBtn) {
+            premiumBtn.innerHTML = `<i data-lucide="crown"></i><span>Go Premium</span>`;
+            premiumBtn.style.background = '';
+            premiumBtn.style.borderColor = '';
+        }
+    }
+    if (window.lucide) window.lucide.createIcons();
+}

@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ResuTailor — Zero-Cost AI Resume Editor</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="dark-mode">
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-logo">
+                    <i data-lucide="sparkles" class="logo-icon"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>ResuTailor</h1>
+                    <span class="brand-badge">Student Edition</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <button class="nav-btn active" data-target="dashboard-view">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button class="nav-btn" data-target="persona-view">
+                    <i data-lucide="user"></i>
+                    <span>My Persona</span>
+                </button>
+                <button class="nav-btn" data-target="tailor-view">
+                    <i data-lucide="file-text"></i>
+                    <span>Tailor Resume</span>
+                </button>
+                <button class="nav-btn" data-target="preview-view">
+                    <i data-lucide="printer"></i>
+                    <span>Preview & Export</span>
+                </button>
+                <button class="nav-btn nav-btn-premium" data-target="subscription-view">
+                    <i data-lucide="crown"></i>
+                    <span>Go Premium</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button id="btn-api-settings" class="api-status-btn keys-missing">
+                    <span class="status-dot"></span>
+                    <span class="status-text">API Key Required</span>
+                </button>
+                <div class="footer-credit">
+                    <p>Secured Client-Side Only</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- View: Dashboard -->
+            <section id="dashboard-view" class="view-panel active">
+                <div class="view-header">
+                    <h2 class="view-title">Welcome to ResuTailor</h2>
+                    <p class="view-subtitle">Your offline-first, zero-cost AI career assistant.</p>
+                </div>
+                
+                <div class="dashboard-grid">
+                    <!-- Setup Card -->
+                    <div class="dashboard-card hero-card">
+                        <div class="card-content">
+                            <h3>Quick Start Guide</h3>
+                            <p>Tailor your resume for any Job Description in 3 simple steps. No subscription required, powered by your local storage and personal API key.</p>
+                            <ol class="steps-list">
+                                <li>
+                                    <div class="step-num">1</div>
+                                    <div class="step-desc"><strong>Enter your Gemini API Key</strong>. It's 100% free and takes 30 seconds.</div>
+                                </li>
+                                <li>
+                                    <div class="step-num">2</div>
+                                    <div class="step-desc"><strong>Build your Master Persona</strong>. Add your experiences, projects, and skills.</div>
+                                </li>
+                                <li>
+                                    <div class="step-num">3</div>
+                                    <div class="step-desc"><strong>Paste a Job Description</strong> and instantly download an optimized ATS-friendly PDF.</div>
+                                </li>
+                            </ol>
+                            <button id="btn-dashboard-start" class="btn btn-primary btn-icon">
+                                <span>Get Started</span>
+                                <i data-lucide="arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Statistics / Persona Summary -->
+                    <div class="dashboard-card status-card">
+                        <h3>Your Resume Stats</h3>
+                        <div class="stat-group">
+                            <div class="stat-item">
+                                <span class="stat-value" id="stat-experience">0</span>
+                                <span class="stat-label">Job Experiences</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value" id="stat-projects">0</span>
+                                <span class="stat-label">Projects</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value" id="stat-skills">0</span>
+                                <span class="stat-label">Tech Skills</span>
+                            </div>
+                        </div>
+                        <div class="tech-stack-summary">
+                            <h4>Detected Tech Stack</h4>
+                            <div id="tech-tags-container" class="tags-container">
+                                <span class="placeholder-tag">No tech stack detected yet. Add details in Persona.</span>
+                            </div>
+                            <button id="btn-analyze-tech" class="btn btn-secondary btn-sm" style="margin-top: 12px; display: none;">
+                                <i data-lucide="wand-2"></i>
+                                <span>Re-analyze Tech Stack</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Privacy Banner -->
+                <div class="privacy-alert">
+                    <div class="alert-icon-wrapper">
+                        <i data-lucide="shield-check"></i>
+                    </div>
+                    <div class="alert-text">
+                        <h4>100% Privacy Guarantee</h4>
+                        <p>We do not store your API keys, resume text, or contact details on any servers. Everything is compiled directly in your browser and stored in your local storage. Safe, secure, and costing $0 to operate.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- View: My Persona -->
+            <section id="persona-view" class="view-panel">
+                <div class="view-header">
+                    <h2 class="view-title">Master Persona</h2>
+                    <p class="view-subtitle">Enter all your experiences and achievements here. The AI will draw from this pool of data.</p>
+                    <div class="header-actions">
+                        <button id="btn-export-profile" class="btn btn-secondary btn-icon">
+                            <i data-lucide="download"></i>
+                            <span>Export Profile JSON</span>
+                        </button>
+                        <button id="btn-import-profile" class="btn btn-secondary btn-icon">
+                            <i data-lucide="upload"></i>
+                            <span>Import Profile JSON</span>
+                        </button>
+                        <input type="file" id="file-import-input" accept=".json" style="display: none;">
+                    </div>
+                </div>
+
+                <div class="persona-layout">
+                    <!-- Tabs -->
+                    <div class="tab-container">
+                        <div class="tab-list">
+                            <button class="tab-btn active" data-tab="contact-tab">Contact Info</button>
+                            <button class="tab-btn" data-tab="education-tab">Education</button>
+                            <button class="tab-btn" data-tab="experience-tab">Work Experience</button>
+                            <button class="tab-btn" data-tab="projects-tab">Projects</button>
+                            <button class="tab-btn" data-tab="skills-tab">Skills & Core Competencies</button>
+                        </div>
+
+                        <!-- Tab: Contact Info -->
+                        <div id="contact-tab" class="tab-panel active">
+                            <form id="form-contact" class="persona-form">
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="contact-fullname">Full Name</label>
+                                        <input type="text" id="contact-fullname" placeholder="John Doe" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="contact-email">Email Address</label>
+                                        <input type="email" id="contact-email" placeholder="john.doe@example.com" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="contact-phone">Phone Number</label>
+                                        <input type="tel" id="contact-phone" placeholder="+91 98765 43210">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="contact-location">Location (City, Country)</label>
+                                        <input type="text" id="contact-location" placeholder="Bengaluru, India">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="contact-linkedin">LinkedIn URL</label>
+                                        <input type="url" id="contact-linkedin" placeholder="https://linkedin.com/in/johndoe">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="contact-github">GitHub / Portfolio URL</label>
+                                        <input type="url" id="contact-github" placeholder="https://github.com/johndoe">
+                                    </div>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">Save Contact Info</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Tab: Education -->
+                        <div id="education-tab" class="tab-panel">
+                            <div class="list-manager">
+                                <div id="education-list" class="manager-list">
+                                    <!-- Render list dynamically -->
+                                </div>
+                                <button id="btn-add-education" class="btn btn-secondary btn-icon">
+                                    <i data-lucide="plus"></i>
+                                    <span>Add Education</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Tab: Experience -->
+                        <div id="experience-tab" class="tab-panel">
+                            <div class="list-manager">
+                                <div id="experience-list" class="manager-list">
+                                    <!-- Render list dynamically -->
+                                </div>
+                                <button id="btn-add-experience" class="btn btn-secondary btn-icon">
+                                    <i data-lucide="plus"></i>
+                                    <span>Add Work Experience</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Tab: Projects -->
+                        <div id="projects-tab" class="tab-panel">
+                            <div class="list-manager">
+                                <div id="projects-list" class="manager-list">
+                                    <!-- Render list dynamically -->
+                                </div>
+                                <button id="btn-add-project" class="btn btn-secondary btn-icon">
+                                    <i data-lucide="plus"></i>
+                                    <span>Add Project</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Tab: Skills -->
+                        <div id="skills-tab" class="tab-panel">
+                            <form id="form-skills" class="persona-form">
+                                <div class="form-group">
+                                    <label for="skills-languages">Programming Languages (Comma-separated)</label>
+                                    <input type="text" id="skills-languages" placeholder="JavaScript, Python, Java, C++, TypeScript">
+                                </div>
+                                <div class="form-group">
+                                    <label for="skills-frameworks">Frameworks & Libraries (Comma-separated)</label>
+                                    <input type="text" id="skills-frameworks" placeholder="React, Next.js, Node.js, Express, Flask">
+                                </div>
+                                <div class="form-group">
+                                    <label for="skills-databases">Databases & Tools (Comma-separated)</label>
+                                    <input type="text" id="skills-databases" placeholder="MongoDB, PostgreSQL, Git, Docker, AWS, Firebase">
+                                </div>
+                                <div class="form-group">
+                                    <label for="skills-custom">Other Skills / Methodologies (Comma-separated)</label>
+                                    <input type="text" id="skills-custom" placeholder="Agile, RESTful APIs, System Design, CI/CD">
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">Save Skills</button>
+                                    <button id="btn-trigger-ai-tech" type="button" class="btn btn-accent">
+                                        <i data-lucide="cpu"></i>
+                                        <span>Infer Tech Stack using AI</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- View: Tailor Resume -->
+            <section id="tailor-view" class="view-panel">
+                <div class="view-header">
+                    <h2 class="view-title">Tailor Resume for Job</h2>
+                    <p class="view-subtitle">Provide details about the job you are applying for, and Gemini will optimize your Master Persona to fit it perfectly.</p>
+                </div>
+
+                <div class="tailor-container">
+                    <div class="tailor-form-panel">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="job-title-input">Target Job Title</label>
+                                <input type="text" id="job-title-input" placeholder="e.g. Software Engineer, Backend Intern" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="company-name-input">Company Name</label>
+                                <input type="text" id="company-name-input" placeholder="e.g. Google, Stripe" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="jd-input">Paste Job Description (JD)</label>
+                            <textarea id="jd-input" rows="8" placeholder="Paste the job requirements, responsibilities, and description directly from the web posting..." required></textarea>
+                        </div>
+                        
+                        <div class="tailor-options">
+                            <h3>Tailoring Parameters</h3>
+                            <div class="options-grid">
+                                <div class="form-group">
+                                    <label for="tailor-tone">AI Tone</label>
+                                    <select id="tailor-tone">
+                                        <option value="balanced" selected>Professional & Balanced</option>
+                                        <option value="technical">Highly Technical & Core Dev</option>
+                                        <option value="action">Action-Oriented & Leadership</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="tailor-pages">Target Length</label>
+                                    <select id="tailor-pages">
+                                        <option value="1" selected>Fit exactly on 1 page</option>
+                                        <option value="2">2 Pages (detailed)</option>
+                                        <option value="any">Keep original length</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tailor-actions">
+                            <button id="btn-tailor-resume" class="btn btn-primary btn-lg btn-icon">
+                                <i data-lucide="wand-2"></i>
+                                <span>Generate Optimized Resume</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- AI Tailor Processing State -->
+                    <div id="ai-loading" class="ai-loading-overlay" style="display: none;">
+                        <div class="loading-spinner-wrapper">
+                            <div class="loading-spinner"></div>
+                            <h3 id="loading-step-title">Analyzing Job Description...</h3>
+                            <p id="loading-step-subtitle">This takes about 10-15 seconds. Tailoring achievements and matching keywords...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- View: Preview & Export -->
+            <section id="preview-view" class="view-panel">
+                <div class="view-header print-hidden">
+                    <h2 class="view-title">Resume Preview</h2>
+                    <p class="view-subtitle">Review the tailored resume and download your print-ready, ATS-friendly PDF.</p>
+                    <div class="header-actions">
+                        <button id="btn-back-to-tailor" class="btn btn-secondary btn-icon">
+                            <i data-lucide="arrow-left"></i>
+                            <span>Edit Description</span>
+                        </button>
+                        <button id="btn-print-resume" class="btn btn-accent btn-icon btn-lg">
+                            <i data-lucide="printer"></i>
+                            <span>Print / Save as PDF</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="preview-workspace">
+                    <div class="preview-options print-hidden">
+                        <h3>Template Options</h3>
+                        <div class="template-selector">
+                            <button class="template-btn active" data-style="classic">Classic Professional</button>
+                            <button class="template-btn" data-style="modern">Modern Minimalist</button>
+                            <button class="template-btn" data-style="compact">Compact (Highly Packed)</button>
+                        </div>
+                        <div class="customizer-options">
+                            <div class="form-group checkbox-group">
+                                <input type="checkbox" id="toggle-opt-projects" checked>
+                                <label for="toggle-opt-projects">Include Projects Section</label>
+                            </div>
+                            <div class="form-group checkbox-group">
+                                <input type="checkbox" id="toggle-opt-skills" checked>
+                                <label for="toggle-opt-skills">Include Skills Headers</label>
+                            </div>
+                        </div>
+                        <div class="alert-info-mini">
+                            <i data-lucide="info"></i>
+                            <p>For best results, select <strong>"Save as PDF"</strong>, turn off headers/footers, and set background graphics to "On" in the print dialogue.</p>
+                        </div>
+                    </div>
+
+                    <!-- PDF Sheet Container -->
+                    <div class="pdf-container">
+                        <div id="resume-sheet" class="resume-sheet template-classic">
+                            <!-- Injected dynamically by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- View: Go Premium -->
+            <section id="subscription-view" class="view-panel">
+                <div class="view-header">
+                    <h2 class="view-title">Unlock Premium Support</h2>
+                    <p class="view-subtitle">ResuTailor is completely free for local use. Support our development to unlock template upgrades and custom formatting!</p>
+                </div>
+
+                <div class="pricing-container">
+                    <div class="pricing-card">
+                        <div class="pricing-badge">Popular</div>
+                        <h3>Student Yearly</h3>
+                        <div class="price">
+                            <span class="currency">₹</span>
+                            <span class="amount">999</span>
+                            <span class="period">/ year</span>
+                        </div>
+                        <p class="pricing-desc">Perfect for university students going through placement seasons.</p>
+                        <ul class="pricing-features">
+                            <li><i data-lucide="check"></i> Unlimited Tailored Resumes</li>
+                            <li><i data-lucide="check"></i> Premium ATS templates</li>
+                            <li><i data-lucide="check"></i> Multi-page styling modes</li>
+                            <li><i data-lucide="check"></i> Priority prompt optimizations</li>
+                        </ul>
+                        <button class="btn btn-primary btn-block btn-buy-mock" data-tier="Yearly">Activate Now</button>
+                    </div>
+
+                    <div class="pricing-card premium-card">
+                        <div class="pricing-badge badge-accent">Best Value</div>
+                        <h3>Lifetime Access</h3>
+                        <div class="price">
+                            <span class="currency">₹</span>
+                            <span class="amount">6,999</span>
+                            <span class="period">/ once</span>
+                        </div>
+                        <p class="pricing-desc">One-time payment for continuous access during internships and job switches.</p>
+                        <ul class="pricing-features">
+                            <li><i data-lucide="check"></i> Everything in Yearly</li>
+                            <li><i data-lucide="check"></i> Lifetime updates & templates</li>
+                            <li><i data-lucide="check"></i> Direct JSON syncing support</li>
+                            <li><i data-lucide="check"></i> Ad-free forever</li>
+                        </ul>
+                        <button class="btn btn-accent btn-block btn-buy-mock" data-tier="Lifetime">Go Lifetime</button>
+                    </div>
+                </div>
+
+                <div class="license-entry-box">
+                    <h3>Already have a subscription license key?</h3>
+                    <p>Enter your Gumroad / Stripe license key below to unlock premium presets.</p>
+                    <div class="license-input-group">
+                        <input type="text" id="input-license-key" placeholder="XXXX-XXXX-XXXX-XXXX">
+                        <button id="btn-verify-license" class="btn btn-secondary">Activate Key</button>
+                    </div>
+                    <p id="license-msg" class="license-status-message"></p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal: API Key Settings -->
+    <div id="modal-api-settings" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i data-lucide="key" class="modal-title-icon"></i> Gemini API Key Setup</h3>
+                <button class="modal-close" id="btn-close-api-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-intro">ResuTailor runs entirely in your browser. We don't host an AI model server to keep our operations 100% free and keep your data private. To use the AI features, you need a Gemini API Key.</p>
+                
+                <div class="tutorial-box">
+                    <h4>How to get a FREE API Key:</h4>
+                    <ol>
+                        <li>Go to Google AI Studio at <a href="https://aistudio.google.com/" target="_blank" rel="noopener">aistudio.google.com <i data-lucide="external-link" style="display:inline-block; width:12px; height:12px;"></i></a></li>
+                        <li>Log in with any standard Google Workspace or Gmail account.</li>
+                        <li>Click <strong>"Get API key"</strong> on the top left.</li>
+                        <li>Click <strong>"Create API key"</strong>, copy it, and paste it below.</li>
+                    </ol>
+                </div>
+
+                <div class="form-group" style="margin-top: 20px;">
+                    <label for="input-api-key">Your Gemini API Key</label>
+                    <input type="password" id="input-api-key" placeholder="AIzaSy..." class="form-control">
+                </div>
+                
+                <div class="privacy-note">
+                    <i data-lucide="lock"></i>
+                    <span>This key is only stored inside your browser's local storage and is sent directly to Google APIs. We never see or store your key.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-save-api-key" class="btn btn-primary btn-block">Save API Key</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Dynamic Editor Form for Add/Edit Experience/Education/Project -->
+    <div id="modal-item-editor" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="item-editor-title">Edit Entry</h3>
+                <button class="modal-close" id="btn-close-editor-modal">&times;</button>
+            </div>
+            <div class="modal-body" id="item-editor-body">
+                <!-- Dynamically loaded fields based on context -->
+            </div>
+            <div class="modal-footer">
+                <button id="btn-save-item-entry" class="btn btn-primary">Save Entry</button>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
