@@ -14,6 +14,10 @@ let state = {
     tailoredResume: JSON.parse(localStorage.getItem('resutailor_tailored')) || null
 };
 
+// Where the user's manual in-place edits to the generated resume are kept.
+// Present = show the hand-edited version; cleared when a new resume is generated.
+const EDITED_RESUME_KEY = 'resutailor_edited_resume';
+
 // Escapes a value for safe interpolation into innerHTML templates
 // (element text and double-quoted attribute values)
 function esc(value) {
@@ -57,6 +61,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Support banner (free tool, optional gratitude tip)
     initSupportBanner();
     renderSupportQR();
+
+    // Danger zone: full local data wipe
+    initDangerZone();
 
     // Clean up license data from the old subscription model
     localStorage.removeItem('resutailor_license_key');
@@ -851,6 +858,8 @@ function initTailorHandlers() {
             if (tailoredResult) {
                 state.tailoredResume = tailoredResult;
                 localStorage.setItem('resutailor_tailored', JSON.stringify(tailoredResult));
+                // A freshly generated resume supersedes any manual edits to the previous one
+                localStorage.removeItem(EDITED_RESUME_KEY);
                 
                 // Route to Preview View
                 const previewBtn = document.querySelector('.sidebar-nav .nav-btn[data-target="preview-view"]');
@@ -871,14 +880,16 @@ function initTailorHandlers() {
 function initPreviewHandlers() {
     const sheet = document.getElementById('resume-sheet');
     const templateButtons = document.querySelectorAll('.template-selector .template-btn');
+    const editBtn = document.getElementById('btn-edit-resume');
+    let isEditingSheet = false;
 
     templateButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             templateButtons.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            
+
             const styleName = btn.getAttribute('data-style');
-            sheet.className = `resume-sheet template-${styleName}`;
+            sheet.className = `resume-sheet template-${styleName}${isEditingSheet ? ' editing' : ''}`;
         });
     });
 
@@ -898,16 +909,71 @@ function initPreviewHandlers() {
         document.querySelector('.sidebar-nav .nav-btn[data-target="tailor-view"]').click();
     });
 
-    // Native PDF print command
+    // In-place text editing of the generated resume
+    const setSheetEditing = (on, { save = true } = {}) => {
+        isEditingSheet = on;
+        sheet.contentEditable = on ? 'true' : 'false';
+        sheet.classList.toggle('editing', on);
+        editBtn.innerHTML = on
+            ? `<i data-lucide="check"></i><span>Done Editing</span>`
+            : `<i data-lucide="pencil"></i><span>Edit Text</span>`;
+        editBtn.classList.toggle('btn-accent', on);
+        editBtn.classList.toggle('btn-secondary', !on);
+        if (window.lucide) window.lucide.createIcons();
+        if (on) {
+            sheet.focus();
+        } else if (save) {
+            localStorage.setItem(EDITED_RESUME_KEY, sheet.innerHTML);
+        }
+    };
+
+    editBtn.addEventListener('click', () => {
+        if (!state.tailoredResume && !localStorage.getItem(EDITED_RESUME_KEY)) {
+            alert('Generate a tailored resume first — then you can fine-tune its wording here.');
+            return;
+        }
+        setSheetEditing(!isEditingSheet);
+    });
+
+    // Persist edits as they happen so nothing is lost if the user navigates away mid-edit
+    sheet.addEventListener('input', () => {
+        if (isEditingSheet) localStorage.setItem(EDITED_RESUME_KEY, sheet.innerHTML);
+    });
+
+    // Discard manual edits and restore the AI-generated version
+    document.getElementById('btn-reset-edits').addEventListener('click', () => {
+        if (!localStorage.getItem(EDITED_RESUME_KEY)) {
+            alert('No manual edits to reset — you are already viewing the AI-generated version.');
+            return;
+        }
+        if (!confirm('Discard your manual edits and restore the AI-generated version?')) return;
+        setSheetEditing(false, { save: false });
+        localStorage.removeItem(EDITED_RESUME_KEY);
+        renderResumePreview();
+    });
+
+    // Native PDF print command (exits edit mode first so edits are saved and no editing outline prints)
     document.getElementById('btn-print-resume').addEventListener('click', () => {
+        if (isEditingSheet) setSheetEditing(false);
         window.print();
     });
 }
 
 function renderResumePreview() {
     const sheet = document.getElementById('resume-sheet');
+
+    // If the user hand-edited the resume, show their edited version instead of
+    // rebuilding from the AI data (which would wipe their changes)
+    const editedHTML = localStorage.getItem(EDITED_RESUME_KEY);
+    if (editedHTML) {
+        sheet.innerHTML = editedHTML;
+        syncPreviewSectionToggles(sheet);
+        showSupportBannerIfNotDismissed();
+        return;
+    }
+
     const data = state.tailoredResume;
-    
+
     if (!data) return;
 
     // Build components
@@ -979,7 +1045,7 @@ function renderResumePreview() {
         ${data.summary ? `
         <section class="resume-section">
             <div class="resume-section-title">Summary</div>
-            <p style="font-size: 12.5px; color: #334155; text-align: justify;\">${esc(data.summary)}</p>
+            <p style="font-size: 12.5px; color: #334155; text-align: justify;">${esc(data.summary)}</p>
         </section>
         ` : ''}
 
@@ -1015,18 +1081,50 @@ function renderResumePreview() {
         ` : ''}
     `;
 
-    // Sync toggle statuses
-    const showProjects = document.getElementById('toggle-opt-projects').checked;
-    const showSkills = document.getElementById('toggle-opt-skills').checked;
-    
-    const projSec = sheet.querySelector('.sec-projects');
-    const skillSec = sheet.querySelector('.sec-skills');
-    
-    if (projSec) projSec.style.display = showProjects ? 'block' : 'none';
-    if (skillSec) skillSec.style.display = showSkills ? 'block' : 'none';
+    syncPreviewSectionToggles(sheet);
 
     // The user has a generated resume in front of them — gently mention support
     showSupportBannerIfNotDismissed();
+}
+
+// Applies the Include Projects / Include Skills checkbox states to the rendered sheet
+function syncPreviewSectionToggles(sheet) {
+    const showProjects = document.getElementById('toggle-opt-projects').checked;
+    const showSkills = document.getElementById('toggle-opt-skills').checked;
+
+    const projSec = sheet.querySelector('.sec-projects');
+    const skillSec = sheet.querySelector('.sec-skills');
+
+    if (projSec) projSec.style.display = showProjects ? 'block' : 'none';
+    if (skillSec) skillSec.style.display = showSkills ? 'block' : 'none';
+}
+
+// 5b. DANGER ZONE — permanently wipe every trace of the user's data from this browser
+function initDangerZone() {
+    document.getElementById('btn-delete-all').addEventListener('click', () => {
+        const msg = [
+            'Delete ALL your ResuTailor data from this browser?',
+            '',
+            'This permanently removes:',
+            '• Your Master Persona (contact, education, experience, projects, skills)',
+            '• Your generated resume and any manual edits to it',
+            '• Your saved Gemini API key',
+            '• All other ResuTailor settings',
+            '',
+            'PDFs you already downloaded are NOT affected, and uploaded resume files were never stored anywhere.',
+            '',
+            'This cannot be undone. Are you sure?'
+        ].join('\n');
+
+        if (!confirm(msg)) return;
+
+        Object.keys(localStorage)
+            .filter(key => key.startsWith('resutailor_'))
+            .forEach(key => localStorage.removeItem(key));
+
+        alert('All your ResuTailor data has been deleted from this browser.');
+        location.reload();
+    });
 }
 
 // 6. GENERAL DASHBOARD METRICS

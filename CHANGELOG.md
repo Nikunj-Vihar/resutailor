@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.1.0 — In-place resume editing & data deletion
+
+- **Edit Text** on the Preview page: click to edit the generated resume directly on the page (fix wordings, tweak bullets), then print/save as PDF. Edits auto-save as you type and survive navigation; "Reset to AI Version" restores the untouched generated resume. Generating a new resume replaces any manual edits.
+- **Delete All My Data** in the sidebar: one click (with a detailed confirmation) permanently wipes everything ResuTailor stored in the browser — persona, generated resume and edits, Gemini API key, and all settings.
+
 ## v2.0.0 — Multi-resume persona building
 
 - Importing a resume now **merges into** the persona instead of replacing it — upload two or more resumes (e.g. an older one and a newer one) and each adds its new details

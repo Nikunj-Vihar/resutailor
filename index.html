@@ -64,8 +64,12 @@
                     <span class="status-text">Set Up Your Free API Key</span>
                     <i data-lucide="arrow-right" class="api-btn-arrow"></i>
                 </button>
+                <button id="btn-delete-all" class="delete-all-btn">
+                    <i data-lucide="trash-2"></i>
+                    <span>Delete All My Data</span>
+                </button>
                 <div class="footer-credit">
-                    <p>Secured Client-Side Only &middot; v2.0.0</p>
+                    <p>Secured Client-Side Only &middot; v2.1.0</p>
                 </div>
             </div>
         </aside>
@@ -356,6 +360,10 @@
                                 <i data-lucide="arrow-left"></i>
                                 <span>Edit Description</span>
                             </button>
+                            <button id="btn-edit-resume" class="btn btn-secondary btn-icon">
+                                <i data-lucide="pencil"></i>
+                                <span>Edit Text</span>
+                            </button>
                             <button id="btn-print-resume" class="btn btn-accent btn-icon btn-lg">
                                 <i data-lucide="printer"></i>
                                 <span>Print / Save as PDF</span>
@@ -389,9 +397,13 @@
                                 <label for="toggle-opt-skills">Include Skills Headers</label>
                             </div>
                         </div>
+                        <button id="btn-reset-edits" class="btn btn-secondary btn-sm btn-icon" style="width: 100%; margin-bottom: 14px;">
+                            <i data-lucide="rotate-ccw"></i>
+                            <span>Reset to AI Version</span>
+                        </button>
                         <div class="alert-info-mini">
                             <i data-lucide="info"></i>
-                            <p>For best results, select <strong>"Save as PDF"</strong>, turn off headers/footers, and set background graphics to "On" in the print dialogue.</p>
+                            <p>Click <strong>"Edit Text"</strong> to fix any wording directly on the page. For best results when printing, select <strong>"Save as PDF"</strong>, turn off headers/footers, and set background graphics to "On".</p>
                         </div>
                     </div>
 

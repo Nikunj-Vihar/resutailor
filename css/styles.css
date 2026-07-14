@@ -1820,3 +1820,43 @@ body.dark-mode {
     opacity: 1;
     border-color: var(--warning);
 }
+
+/* Delete All Data (danger zone) */
+.delete-all-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 10px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.delete-all-btn i {
+    width: 13px;
+    height: 13px;
+}
+
+.delete-all-btn:hover {
+    color: var(--danger);
+    border-color: rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.08);
+}
+
+/* In-place resume editing mode */
+.resume-sheet.editing {
+    outline: 2px dashed var(--accent-teal);
+    outline-offset: 5px;
+    cursor: text;
+}
+
+.resume-sheet.editing:focus {
+    outline-color: var(--accent-purple);
+}
