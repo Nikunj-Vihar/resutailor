@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.2.0 — Mobile fixes & guided flow
+
+- **Fixed:** on phones/tablets (≤1024px) the sidebar footer was hidden entirely, making the API key setup and Delete All Data buttons unreachable — it now collapses into a compact row instead
+- **Fixed:** the five Persona tabs overflowed off-screen on narrow displays — they now scroll horizontally
+- Phone-size polish: single-column form layouts, wrapped header actions, tighter paddings
+- New **"Next: Tailor Resume"** button on the Skills tab — saves your skills and takes you straight to the tailoring step
+
 ## v2.1.0 — In-place resume editing & data deletion
 
 - **Edit Text** on the Preview page: click to edit the generated resume directly on the page (fix wordings, tweak bullets), then print/save as PDF. Edits auto-save as you type and survive navigation; "Reset to AI Version" restores the untouched generated resume. Generating a new resume replaces any manual edits.

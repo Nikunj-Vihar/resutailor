@@ -694,8 +694,14 @@ body.dark-mode {
 
 .form-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 16px;
     margin-top: 12px;
+}
+
+/* Pushes the "Next step" navigation button to the far right of the action row */
+.btn-next-step {
+    margin-left: auto;
 }
 
 /* List managers inside Persona Tabs */
@@ -1488,8 +1494,35 @@ body.dark-mode {
         border-bottom: 3px solid var(--accent-purple);
         padding-left: 12px;
     }
+    /* Keep the API key setup and Delete All buttons reachable on small
+       screens — collapse the footer into one compact row instead of hiding it */
     .sidebar-footer {
-        display: none; /* Hide API key status on small screens for spacing */
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+    }
+    .api-status-btn {
+        flex: 1;
+        min-width: 0;
+    }
+    .delete-all-btn {
+        width: auto;
+        flex-shrink: 0;
+    }
+    .delete-all-btn span {
+        display: none; /* icon-only on small screens */
+    }
+    .footer-credit {
+        display: none;
+    }
+    /* Persona tabs: scroll sideways instead of overflowing off-screen */
+    .tab-list {
+        overflow-x: auto;
+    }
+    .tab-btn {
+        white-space: nowrap;
+        flex-shrink: 0;
     }
     .main-content {
         padding: 24px;
@@ -1507,6 +1540,39 @@ body.dark-mode {
     .pricing-card {
         width: 100%;
         max-width: 400px;
+    }
+}
+
+/* Phone-size refinements */
+@media (max-width: 640px) {
+    .form-grid,
+    .options-grid {
+        grid-template-columns: 1fr;
+    }
+    .view-header-top {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .header-actions {
+        flex-wrap: wrap;
+    }
+    .main-content {
+        padding: 16px;
+    }
+    .tab-panel,
+    .tailor-container {
+        padding: 20px 16px;
+    }
+    .view-title {
+        font-size: 1.6rem;
+    }
+    .stat-group {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    .btn-next-step {
+        margin-left: 0; /* stack naturally when actions wrap into a column */
     }
 }
 

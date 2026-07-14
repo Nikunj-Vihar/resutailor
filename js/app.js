@@ -235,6 +235,18 @@ function initPersonaHandlers() {
         alert('Skills list updated!');
     });
 
+    // Next step: silently save the skills, then move on to tailoring
+    document.getElementById('btn-goto-tailor').addEventListener('click', () => {
+        state.profile.skills = {
+            languages: document.getElementById('skills-languages').value.trim(),
+            frameworks: document.getElementById('skills-frameworks').value.trim(),
+            databases: document.getElementById('skills-databases').value.trim(),
+            custom: document.getElementById('skills-custom').value.trim()
+        };
+        saveProfileToLocalStorage();
+        document.querySelector('.sidebar-nav .nav-btn[data-target="tailor-view"]').click();
+    });
+
     // 3.4 Infer Skills using Gemini Button
     const inferBtn = document.getElementById('btn-trigger-ai-tech');
     inferBtn.addEventListener('click', async () => {
