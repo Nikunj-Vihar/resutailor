@@ -1,25 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Content Security Policy: only self-hosted code, pinned CDNs, and the Gemini API may load/run -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://cdnjs.cloudflare.com blob:; worker-src 'self' blob: https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://generativelanguage.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' https://unpkg.com https://cdnjs.cloudflare.com blob:; worker-src 'self' blob: https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://generativelanguage.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
     <title>ResuTailor — Zero-Cost AI Resume Editor</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <!-- Lucide Icons (version-pinned with subresource integrity) -->
     <script src="https://unpkg.com/lucide@1.24.0/dist/umd/lucide.min.js"
-            integrity="sha384-mooE85Luwgx+AyykX7e90VcN8/QCFTSIwPuHLmvcsLVoA0en7lKYb9XlOzn5G2co"
-            crossorigin="anonymous"></script>
+        integrity="sha384-mooE85Luwgx+AyykX7e90VcN8/QCFTSIwPuHLmvcsLVoA0en7lKYb9XlOzn5G2co"
+        crossorigin="anonymous"></script>
     <!-- PDF.js for client-side resume text extraction (version-pinned with subresource integrity) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
-            integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e"
-            crossorigin="anonymous" defer></script>
+        integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e" crossorigin="anonymous"
+        defer></script>
     <link rel="stylesheet" href="css/styles.css">
 </head>
+
 <body class="dark-mode">
     <div class="app-container">
         <!-- Sidebar Navigation -->
@@ -30,10 +35,10 @@
                 </div>
                 <div class="brand-text">
                     <h1>ResuTailor</h1>
-                    <span class="brand-badge">Student Edition</span>
+                    <!-- <span class="brand-badge">Student Edition</span> -->
                 </div>
             </div>
-            
+
             <nav class="sidebar-nav">
                 <button class="nav-btn active" data-target="dashboard-view">
                     <i data-lucide="layout-dashboard"></i>
@@ -82,25 +87,29 @@
                     <h2 class="view-title">Welcome to ResuTailor</h2>
                     <p class="view-subtitle">Your offline-first, zero-cost AI career assistant.</p>
                 </div>
-                
+
                 <div class="dashboard-grid">
                     <!-- Setup Card -->
                     <div class="dashboard-card hero-card">
                         <div class="card-content">
                             <h3>Quick Start Guide</h3>
-                            <p>Tailor your resume for any Job Description in 3 simple steps. No subscription required, powered by your local storage and personal API key.</p>
+                            <p>Tailor your resume for any Job Description in 3 simple steps. No subscription required,
+                                powered by your local storage and personal API key.</p>
                             <ol class="steps-list">
                                 <li>
                                     <div class="step-num">1</div>
-                                    <div class="step-desc"><strong>Enter your Gemini API Key</strong>. It's 100% free and takes 30 seconds.</div>
+                                    <div class="step-desc"><strong>Enter your Gemini API Key</strong>. It's 100% free
+                                        and takes 30 seconds.</div>
                                 </li>
                                 <li>
                                     <div class="step-num">2</div>
-                                    <div class="step-desc"><strong>Build your Master Persona</strong>. Add your experiences, projects, and skills.</div>
+                                    <div class="step-desc"><strong>Build your Master Persona</strong>. Add your
+                                        experiences, projects, and skills.</div>
                                 </li>
                                 <li>
                                     <div class="step-num">3</div>
-                                    <div class="step-desc"><strong>Paste a Job Description</strong> and instantly download an optimized ATS-friendly PDF.</div>
+                                    <div class="step-desc"><strong>Paste a Job Description</strong> and instantly
+                                        download an optimized ATS-friendly PDF.</div>
                                 </li>
                             </ol>
                             <button id="btn-dashboard-start" class="btn btn-primary btn-icon">
@@ -132,7 +141,8 @@
                             <div id="tech-tags-container" class="tags-container">
                                 <span class="placeholder-tag">No tech stack detected yet. Add details in Persona.</span>
                             </div>
-                            <button id="btn-analyze-tech" class="btn btn-secondary btn-sm" style="margin-top: 12px; display: none;">
+                            <button id="btn-analyze-tech" class="btn btn-secondary btn-sm"
+                                style="margin-top: 12px; display: none;">
                                 <i data-lucide="wand-2"></i>
                                 <span>Re-analyze Tech Stack</span>
                             </button>
@@ -147,7 +157,9 @@
                     </div>
                     <div class="alert-text">
                         <h4>100% Privacy Guarantee</h4>
-                        <p>We do not store your API keys, resume text, or contact details on any servers. Everything is compiled directly in your browser and stored in your local storage. Safe, secure, and costing $0 to operate.</p>
+                        <p>We do not store your API keys, resume text, or contact details on any servers. Everything is
+                            compiled directly in your browser and stored in your local storage. Safe, secure, and
+                            costing $0 to operate.</p>
                     </div>
                 </div>
             </section>
@@ -165,7 +177,8 @@
                             <input type="file" id="resume-pdf-input" accept=".pdf,.txt" style="display: none;">
                         </div>
                     </div>
-                    <p class="view-subtitle">Enter all your experiences and achievements here. You can import several resumes — each one adds its new details to this pool.</p>
+                    <p class="view-subtitle">Enter all your experiences and achievements here. You can import several
+                        resumes — each one adds its new details to this pool.</p>
                 </div>
 
                 <div class="persona-layout">
@@ -189,7 +202,8 @@
                                     </div>
                                     <div class="form-group">
                                         <label for="contact-email">Email Address</label>
-                                        <input type="email" id="contact-email" placeholder="john.doe@example.com" required>
+                                        <input type="email" id="contact-email" placeholder="john.doe@example.com"
+                                            required>
                                     </div>
                                     <div class="form-group">
                                         <label for="contact-phone">Phone Number</label>
@@ -201,7 +215,8 @@
                                     </div>
                                     <div class="form-group">
                                         <label for="contact-linkedin">LinkedIn URL</label>
-                                        <input type="url" id="contact-linkedin" placeholder="https://linkedin.com/in/johndoe">
+                                        <input type="url" id="contact-linkedin"
+                                            placeholder="https://linkedin.com/in/johndoe">
                                     </div>
                                     <div class="form-group">
                                         <label for="contact-github">GitHub / Portfolio URL</label>
@@ -258,19 +273,23 @@
                             <form id="form-skills" class="persona-form">
                                 <div class="form-group">
                                     <label for="skills-languages">Programming Languages (Comma-separated)</label>
-                                    <input type="text" id="skills-languages" placeholder="JavaScript, Python, Java, C++, TypeScript">
+                                    <input type="text" id="skills-languages"
+                                        placeholder="JavaScript, Python, Java, C++, TypeScript">
                                 </div>
                                 <div class="form-group">
                                     <label for="skills-frameworks">Frameworks & Libraries (Comma-separated)</label>
-                                    <input type="text" id="skills-frameworks" placeholder="React, Next.js, Node.js, Express, Flask">
+                                    <input type="text" id="skills-frameworks"
+                                        placeholder="React, Next.js, Node.js, Express, Flask">
                                 </div>
                                 <div class="form-group">
                                     <label for="skills-databases">Databases & Tools (Comma-separated)</label>
-                                    <input type="text" id="skills-databases" placeholder="MongoDB, PostgreSQL, Git, Docker, AWS, Firebase">
+                                    <input type="text" id="skills-databases"
+                                        placeholder="MongoDB, PostgreSQL, Git, Docker, AWS, Firebase">
                                 </div>
                                 <div class="form-group">
                                     <label for="skills-custom">Other Skills / Methodologies (Comma-separated)</label>
-                                    <input type="text" id="skills-custom" placeholder="Agile, RESTful APIs, System Design, CI/CD">
+                                    <input type="text" id="skills-custom"
+                                        placeholder="Agile, RESTful APIs, System Design, CI/CD">
                                 </div>
                                 <div class="form-actions">
                                     <button type="submit" class="btn btn-primary">Save Skills</button>
@@ -289,7 +308,8 @@
             <section id="tailor-view" class="view-panel">
                 <div class="view-header">
                     <h2 class="view-title">Tailor Resume for Job</h2>
-                    <p class="view-subtitle">Provide details about the job you are applying for, and Gemini will optimize your Master Persona to fit it perfectly.</p>
+                    <p class="view-subtitle">Provide details about the job you are applying for, and Gemini will
+                        optimize your Master Persona to fit it perfectly.</p>
                 </div>
 
                 <div class="tailor-container">
@@ -297,7 +317,8 @@
                         <div class="form-grid">
                             <div class="form-group">
                                 <label for="job-title-input">Target Job Title</label>
-                                <input type="text" id="job-title-input" placeholder="e.g. Software Engineer, Backend Intern" required>
+                                <input type="text" id="job-title-input"
+                                    placeholder="e.g. Software Engineer, Backend Intern" required>
                             </div>
                             <div class="form-group">
                                 <label for="company-name-input">Company Name</label>
@@ -306,9 +327,11 @@
                         </div>
                         <div class="form-group">
                             <label for="jd-input">Paste Job Description (JD)</label>
-                            <textarea id="jd-input" rows="8" placeholder="Paste the job requirements, responsibilities, and description directly from the web posting..." required></textarea>
+                            <textarea id="jd-input" rows="8"
+                                placeholder="Paste the job requirements, responsibilities, and description directly from the web posting..."
+                                required></textarea>
                         </div>
-                        
+
                         <div class="tailor-options">
                             <h3>Tailoring Parameters</h3>
                             <div class="options-grid">
@@ -344,7 +367,8 @@
                         <div class="loading-spinner-wrapper">
                             <div class="loading-spinner"></div>
                             <h3 id="loading-step-title">Analyzing Job Description...</h3>
-                            <p id="loading-step-subtitle">This takes about 10-15 seconds. Tailoring achievements and matching keywords...</p>
+                            <p id="loading-step-subtitle">This takes about 10-15 seconds. Tailoring achievements and
+                                matching keywords...</p>
                         </div>
                     </div>
                 </div>
@@ -370,12 +394,15 @@
                             </button>
                         </div>
                     </div>
-                    <p class="view-subtitle">Review the tailored resume and download your print-ready, ATS-friendly PDF.</p>
+                    <p class="view-subtitle">Review the tailored resume and download your print-ready, ATS-friendly PDF.
+                    </p>
                 </div>
 
                 <div id="support-banner" class="support-banner print-hidden" style="display: none;">
                     <i data-lucide="heart" class="support-banner-icon"></i>
-                    <p>Enjoying ResuTailor? It's free forever — but if it brought you value, you can <button id="btn-banner-support" class="link-btn">support the creator</button> as a small thank-you. 🙏</p>
+                    <p>Enjoying ResuTailor? It's free forever — but if it brought you value, you can <button
+                            id="btn-banner-support" class="link-btn">support the creator</button> as a small thank-you.
+                        🙏</p>
                     <button id="btn-banner-dismiss" class="banner-dismiss" aria-label="Dismiss">&times;</button>
                 </div>
 
@@ -397,13 +424,14 @@
                                 <label for="toggle-opt-skills">Include Skills Headers</label>
                             </div>
                         </div>
-                        <button id="btn-reset-edits" class="btn btn-secondary btn-sm btn-icon" style="width: 100%; margin-bottom: 14px;">
+                        <button id="btn-reset-edits" class="btn btn-secondary btn-sm btn-icon"
+                            style="width: 100%; margin-bottom: 14px;">
                             <i data-lucide="rotate-ccw"></i>
                             <span>Reset to AI Version</span>
                         </button>
                         <div class="alert-info-mini">
                             <i data-lucide="info"></i>
-                            <p>Click <strong>"Edit Text"</strong> to fix any wording directly on the page. For best results when printing, select <strong>"Save as PDF"</strong>, turn off headers/footers, and set background graphics to "On".</p>
+                            <p>Click <strong>"Edit Text"</strong> to fix any wording directly on the page.</p>
                         </div>
                     </div>
 
@@ -420,13 +448,17 @@
             <section id="support-view" class="view-panel">
                 <div class="view-header">
                     <h2 class="view-title">ResuTailor is 100% Free</h2>
-                    <p class="view-subtitle">No subscriptions, no locked features, no catch. Every feature is yours, forever.</p>
+                    <p class="view-subtitle">No subscriptions, no locked features, no catch. Every feature is yours,
+                        forever.</p>
                 </div>
 
                 <div class="pricing-container">
                     <div class="pricing-card">
                         <h3>Why is it free?</h3>
-                        <p class="pricing-desc">ResuTailor runs entirely in your browser using your own free Gemini API key, so it costs nothing to operate — and that saving is passed on to you. It was built to help students and job-seekers put their best foot forward without yet another paywall in the way.</p>
+                        <p class="pricing-desc">ResuTailor runs entirely in your browser using your own free Gemini API
+                            key, so it costs nothing to operate — and that saving is passed on to you. It was built to
+                            help students and job-seekers put their best foot forward without yet another paywall in the
+                            way.</p>
                         <ul class="pricing-features">
                             <li><i data-lucide="check"></i> Unlimited tailored resumes</li>
                             <li><i data-lucide="check"></i> All templates & export options</li>
@@ -438,13 +470,16 @@
                     <div class="pricing-card premium-card">
                         <div class="pricing-badge badge-accent">Entirely Optional</div>
                         <h3>Did ResuTailor help you? ❤️</h3>
-                        <p class="pricing-desc">If this tool helped you land an interview or saved you an evening of formatting, you can thank the creator with a small tip. It unlocks nothing — the tool stays fully free either way. Your kind words and shares mean just as much!</p>
+                        <p class="pricing-desc">If this tool helped you land an interview or saved you an evening of
+                            formatting, you can thank the creator with a small tip. It unlocks nothing — the tool stays
+                            fully free either way. Your kind words and shares mean just as much!</p>
                         <div class="upi-qr-wrapper">
                             <div id="upi-qr-code" class="upi-qr-code"></div>
                         </div>
                         <p class="support-upi">Scan with GPay, PhonePe, Paytm, or any UPI app</p>
                         <p class="support-upi">UPI ID: <strong id="upi-id-text">nikunj0903@okhdfcbank</strong>
-                            <button id="btn-copy-upi" class="btn btn-secondary btn-sm" style="margin-left: 8px;">Copy UPI ID</button>
+                            <button id="btn-copy-upi" class="btn btn-secondary btn-sm" style="margin-left: 8px;">Copy
+                                UPI ID</button>
                         </p>
                     </div>
                 </div>
@@ -460,12 +495,16 @@
                 <button class="modal-close" id="btn-close-api-modal">&times;</button>
             </div>
             <div class="modal-body">
-                <p class="modal-intro">ResuTailor runs entirely in your browser. We don't host an AI model server to keep our operations 100% free and keep your data private. To use the AI features, you need a Gemini API Key.</p>
-                
+                <p class="modal-intro">ResuTailor runs entirely in your browser. We don't host an AI model server to
+                    keep our operations 100% free and keep your data private. To use the AI features, you need a Gemini
+                    API Key.</p>
+
                 <div class="tutorial-box">
                     <h4>How to get a FREE API Key:</h4>
                     <ol>
-                        <li>Go to Google AI Studio at <a href="https://aistudio.google.com/" target="_blank" rel="noopener">aistudio.google.com <i data-lucide="external-link" style="display:inline-block; width:12px; height:12px;"></i></a></li>
+                        <li>Go to Google AI Studio at <a href="https://aistudio.google.com/" target="_blank"
+                                rel="noopener">aistudio.google.com <i data-lucide="external-link"
+                                    style="display:inline-block; width:12px; height:12px;"></i></a></li>
                         <li>Log in with any standard Google Workspace or Gmail account.</li>
                         <li>Click <strong>"Get API key"</strong> on the top left.</li>
                         <li>Click <strong>"Create API key"</strong>, copy it, and paste it below.</li>
@@ -476,10 +515,11 @@
                     <label for="input-api-key">Your Gemini API Key</label>
                     <input type="password" id="input-api-key" placeholder="AIzaSy..." class="form-control">
                 </div>
-                
+
                 <div class="privacy-note">
                     <i data-lucide="lock"></i>
-                    <span>This key is only stored inside your browser's local storage and is sent directly to Google APIs. We never see or store your key.</span>
+                    <span>This key is only stored inside your browser's local storage and is sent directly to Google
+                        APIs. We never see or store your key.</span>
                 </div>
             </div>
             <div class="modal-footer">
@@ -523,4 +563,5 @@
     <script src="js/vendor-qrcode.min.js"></script>
     <script type="module" src="js/app.js"></script>
 </body>
+
 </html>
