@@ -300,12 +300,6 @@ function initPersonaHandlers() {
         e.target.value = ''; // allow re-selecting the same file later
         if (!file) return;
 
-        const hasExistingData = state.profile.contact.fullname ||
-            state.profile.experience.length > 0 || state.profile.projects.length > 0;
-        if (hasExistingData && !confirm('Importing will replace your current Persona details with data extracted from this resume. Continue?')) {
-            return;
-        }
-
         pdfImportBtn.disabled = true;
         const origHTML = pdfImportBtn.innerHTML;
         pdfImportBtn.innerHTML = `<i data-lucide="loader" class="spin"></i> <span>Extracting & Parsing...</span>`;
@@ -324,12 +318,9 @@ function initPersonaHandlers() {
             }
 
             const parsed = await parseResumeText(state.apiKey, rawText);
-            applyParsedResume(parsed);
-
-            saveProfileToLocalStorage();
-            populateFormsFromState();
-            renderAllPersonaLists();
-            alert('Resume imported! Review each tab to verify the extracted details, then save any corrections.');
+            // Merge, don't replace: show the review screen so the user confirms
+            // what gets added to the persona (supports importing several resumes)
+            showImportReviewModal(computeImportPlan(parsed));
         } catch (err) {
             alert(`Resume import failed: ${err.message}`);
         } finally {
@@ -337,6 +328,13 @@ function initPersonaHandlers() {
             pdfImportBtn.innerHTML = origHTML;
             if (window.lucide) window.lucide.createIcons();
         }
+    });
+
+    // Import review modal close handlers
+    const reviewModal = document.getElementById('modal-import-review');
+    document.getElementById('btn-close-review-modal').addEventListener('click', () => reviewModal.classList.remove('active'));
+    reviewModal.addEventListener('click', (e) => {
+        if (e.target === reviewModal) reviewModal.classList.remove('active');
     });
 
     // 3.6 CRUD Actions for List Sections (Education, Experience, Projects)
@@ -365,49 +363,183 @@ async function extractPdfText(file) {
     return fullText;
 }
 
-// Maps the AI-parsed resume JSON onto the internal profile shape
-// (bullets stored as newline-joined strings, skills as comma-separated strings)
-function applyParsedResume(parsed) {
-    const joinBullets = (bullets) => Array.isArray(bullets) ? bullets.join('\n') : (bullets || '');
-    const joinSkills = (arr) => Array.isArray(arr) ? arr.join(', ') : (arr || '');
+// --- Resume import merging (v2) ---
+// Each imported resume ADDS to the persona instead of replacing it, so users
+// can upload several resumes (old and new) and accumulate all their details.
 
-    state.profile.contact = {
-        fullname: parsed.contact?.fullname || '',
-        email: parsed.contact?.email || '',
-        phone: parsed.contact?.phone || '',
-        location: parsed.contact?.location || '',
-        linkedin: parsed.contact?.linkedin || '',
-        github: parsed.contact?.github || ''
+// Loose key for duplicate detection: case/punctuation-insensitive
+const normKey = (s) => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+// Maps one AI-parsed entry onto the internal profile shape
+// (bullets stored as newline-joined strings)
+function normalizeParsedEntry(section, item) {
+    const joinBullets = (bullets) => Array.isArray(bullets) ? bullets.join('\n') : (bullets || '');
+    if (section === 'education') {
+        return {
+            degree: item.degree || '',
+            institution: item.institution || '',
+            location: item.location || '',
+            period: item.period || '',
+            gpa: item.gpa || ''
+        };
+    }
+    if (section === 'experience') {
+        return {
+            role: item.role || '',
+            company: item.company || '',
+            location: item.location || '',
+            period: item.period || '',
+            bullets: joinBullets(item.bullets)
+        };
+    }
+    return {
+        name: item.name || '',
+        tech: item.tech || '',
+        period: item.period || '',
+        bullets: joinBullets(item.bullets)
+    };
+}
+
+function importItemTitle(section, entry) {
+    if (section === 'education') return [entry.degree, entry.institution].filter(Boolean).join(' — ');
+    if (section === 'experience') return [entry.role, entry.company].filter(Boolean).join(' — ');
+    return entry.name;
+}
+
+// Compares a parsed resume against the current persona and builds a merge
+// plan: which entries are new, which look like duplicates of existing ones,
+// which empty contact fields can be filled, and which skills are new.
+function computeImportPlan(parsed) {
+    const plan = { contactUpdates: {}, skillsAdded: {}, items: [] };
+
+    ['fullname', 'email', 'phone', 'location', 'linkedin', 'github'].forEach(field => {
+        const incoming = String(parsed.contact?.[field] || '').trim();
+        if (incoming && !String(state.profile.contact[field] || '').trim()) {
+            plan.contactUpdates[field] = incoming;
+        }
+    });
+
+    ['languages', 'frameworks', 'databases', 'custom'].forEach(group => {
+        const existingKeys = new Set(
+            String(state.profile.skills[group] || '').split(',').map(s => normKey(s)).filter(Boolean)
+        );
+        const added = [];
+        (Array.isArray(parsed.skills?.[group]) ? parsed.skills[group] : [])
+            .map(s => String(s).trim()).filter(Boolean)
+            .forEach(skill => {
+                if (!existingKeys.has(normKey(skill))) {
+                    existingKeys.add(normKey(skill));
+                    added.push(skill);
+                }
+            });
+        if (added.length) plan.skillsAdded[group] = added;
+    });
+
+    const findDuplicate = {
+        education: (entry) => state.profile.education.find(e =>
+            normKey(e.degree) === normKey(entry.degree) && normKey(e.institution) === normKey(entry.institution)),
+        experience: (entry) => state.profile.experience.find(e =>
+            normKey(e.role) === normKey(entry.role) && normKey(e.company) === normKey(entry.company)),
+        projects: (entry) => state.profile.projects.find(e => normKey(e.name) === normKey(entry.name))
     };
 
-    state.profile.education = (parsed.education || []).map(edu => ({
-        degree: edu.degree || '',
-        institution: edu.institution || '',
-        location: edu.location || '',
-        period: edu.period || '',
-        gpa: edu.gpa || ''
-    }));
+    ['education', 'experience', 'projects'].forEach(section => {
+        (parsed[section] || []).forEach(raw => {
+            const entry = normalizeParsedEntry(section, raw);
+            if (!normKey(importItemTitle(section, entry))) return; // skip empty extractions
+            const dup = findDuplicate[section](entry);
+            plan.items.push({
+                section,
+                entry,
+                isDuplicate: !!dup,
+                dupLabel: dup ? importItemTitle(section, dup) : ''
+            });
+        });
+    });
 
-    state.profile.experience = (parsed.experience || []).map(exp => ({
-        role: exp.role || '',
-        company: exp.company || '',
-        location: exp.location || '',
-        period: exp.period || '',
-        bullets: joinBullets(exp.bullets)
-    }));
+    return plan;
+}
 
-    state.profile.projects = (parsed.projects || []).map(proj => ({
-        name: proj.name || '',
-        tech: proj.tech || '',
-        period: proj.period || '',
-        bullets: joinBullets(proj.bullets)
-    }));
+// Renders the merge plan into the review modal so the user confirms exactly
+// what gets added before the persona is touched.
+function showImportReviewModal(plan) {
+    const modal = document.getElementById('modal-import-review');
+    const body = document.getElementById('import-review-body');
+    const applyBtn = document.getElementById('btn-apply-import');
 
-    state.profile.skills = {
-        languages: joinSkills(parsed.skills?.languages),
-        frameworks: joinSkills(parsed.skills?.frameworks),
-        databases: joinSkills(parsed.skills?.databases),
-        custom: joinSkills(parsed.skills?.custom)
+    const contactFields = Object.keys(plan.contactUpdates);
+    const skillGroups = Object.entries(plan.skillsAdded);
+    const hasAnything = plan.items.length > 0 || contactFields.length > 0 || skillGroups.length > 0;
+
+    let html = '';
+    if (!hasAnything) {
+        html = `<p class="review-empty">Nothing new found — everything in this resume already exists in your Persona.</p>`;
+    } else {
+        html += `<p class="modal-intro">Here's what this resume adds to your Persona. New entries are pre-selected; entries that look like duplicates of what you already have are unchecked — tick them only if they're genuinely different.</p>`;
+
+        if (contactFields.length) {
+            html += `<div class="review-auto-note"><strong>Empty contact fields to fill:</strong> ${contactFields.map(f => esc(`${f}: ${plan.contactUpdates[f]}`)).join(' · ')}</div>`;
+        }
+        if (skillGroups.length) {
+            const allSkills = skillGroups.flatMap(([, list]) => list);
+            html += `<div class="review-auto-note"><strong>New skills to add (${allSkills.length}):</strong> ${esc(allSkills.join(', '))}</div>`;
+        }
+
+        const sectionLabels = { experience: 'Work Experience', projects: 'Projects', education: 'Education' };
+        ['experience', 'projects', 'education'].forEach(section => {
+            const indexed = plan.items.map((item, idx) => ({ item, idx })).filter(x => x.item.section === section);
+            if (!indexed.length) return;
+            html += `<div class="review-section-title">${sectionLabels[section]}</div>`;
+            indexed.forEach(({ item, idx }) => {
+                const meta = item.isDuplicate
+                    ? `Looks like your existing entry: ${item.dupLabel}`
+                    : (item.entry.period || '');
+                html += `
+                    <label class="review-item ${item.isDuplicate ? 'is-dup' : ''}">
+                        <input type="checkbox" data-item-index="${idx}" ${item.isDuplicate ? '' : 'checked'}>
+                        <div class="review-item-content">
+                            <div class="review-item-title">
+                                <span>${esc(importItemTitle(section, item.entry))}</span>
+                                <span class="review-badge ${item.isDuplicate ? 'badge-dup' : 'badge-new'}">${item.isDuplicate ? 'Possible duplicate' : 'New'}</span>
+                            </div>
+                            ${meta ? `<div class="review-item-meta">${esc(meta)}</div>` : ''}
+                        </div>
+                    </label>`;
+            });
+        });
+    }
+
+    body.innerHTML = html;
+    applyBtn.style.display = hasAnything ? '' : 'none';
+    modal.classList.add('active');
+
+    applyBtn.onclick = () => {
+        let addedCount = 0;
+        body.querySelectorAll('input[type="checkbox"][data-item-index]').forEach(cb => {
+            if (!cb.checked) return;
+            const item = plan.items[Number(cb.dataset.itemIndex)];
+            state.profile[item.section].push(item.entry);
+            addedCount++;
+        });
+
+        Object.entries(plan.contactUpdates).forEach(([field, value]) => {
+            state.profile.contact[field] = value;
+        });
+
+        skillGroups.forEach(([group, skills]) => {
+            const current = String(state.profile.skills[group] || '').trim();
+            state.profile.skills[group] = current ? `${current}, ${skills.join(', ')}` : skills.join(', ');
+        });
+
+        saveProfileToLocalStorage();
+        populateFormsFromState();
+        renderAllPersonaLists();
+        modal.classList.remove('active');
+
+        const extras = [];
+        if (contactFields.length) extras.push(`${contactFields.length} contact field${contactFields.length === 1 ? '' : 's'} filled`);
+        if (skillGroups.length) extras.push('new skills merged');
+        alert(`Import complete! Added ${addedCount} entr${addedCount === 1 ? 'y' : 'ies'}${extras.length ? ` (${extras.join(', ')})` : ''}. Review the Persona tabs to fine-tune.`);
     };
 }
 

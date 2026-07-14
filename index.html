@@ -65,7 +65,7 @@
                     <i data-lucide="arrow-right" class="api-btn-arrow"></i>
                 </button>
                 <div class="footer-credit">
-                    <p>Secured Client-Side Only &middot; v1.0.0</p>
+                    <p>Secured Client-Side Only &middot; v2.0.0</p>
                 </div>
             </div>
         </aside>
@@ -161,7 +161,7 @@
                             <input type="file" id="resume-pdf-input" accept=".pdf,.txt" style="display: none;">
                         </div>
                     </div>
-                    <p class="view-subtitle">Enter all your experiences and achievements here. The AI will draw from this pool of data.</p>
+                    <p class="view-subtitle">Enter all your experiences and achievements here. You can import several resumes — each one adds its new details to this pool.</p>
                 </div>
 
                 <div class="persona-layout">
@@ -491,6 +491,22 @@
             </div>
         </div>
     </div>
+    <!-- Modal: Resume Import Review (confirm what gets merged into the persona) -->
+    <div id="modal-import-review" class="modal-overlay">
+        <div class="modal-card modal-card-wide">
+            <div class="modal-header">
+                <h3><i data-lucide="git-merge" class="modal-title-icon"></i> Review Resume Import</h3>
+                <button class="modal-close" id="btn-close-review-modal">&times;</button>
+            </div>
+            <div class="modal-body" id="import-review-body">
+                <!-- Populated dynamically with the merge plan -->
+            </div>
+            <div class="modal-footer">
+                <button id="btn-apply-import" class="btn btn-primary btn-block">Add Selected to Persona</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Self-hosted QR code renderer (davidshimjs/qrcodejs, MIT) — generates the UPI QR entirely client-side -->
     <script src="js/vendor-qrcode.min.js"></script>
     <script type="module" src="js/app.js"></script>

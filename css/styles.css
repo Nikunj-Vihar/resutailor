@@ -1708,3 +1708,115 @@ body.dark-mode {
 .support-upi strong {
     color: var(--text-primary);
 }
+
+/* Resume Import Review Modal */
+.modal-card-wide {
+    max-width: 640px;
+}
+
+.review-empty {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    padding: 12px 0;
+}
+
+.review-auto-note {
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    line-height: 1.5;
+}
+
+.review-auto-note strong {
+    color: var(--text-primary);
+}
+
+.review-section-title {
+    font-family: var(--font-title);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent-teal);
+    margin: 18px 0 8px;
+}
+
+.review-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-md);
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.review-item:hover {
+    border-color: var(--accent-purple);
+}
+
+.review-item input[type="checkbox"] {
+    margin-top: 3px;
+    accent-color: var(--accent-teal);
+    flex-shrink: 0;
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+}
+
+.review-item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.review-item-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.review-item-meta {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-top: 3px;
+}
+
+.review-badge {
+    font-size: 0.62rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 3px 8px;
+    border-radius: 20px;
+    flex-shrink: 0;
+}
+
+.review-badge.badge-new {
+    background-color: rgba(20, 184, 166, 0.15);
+    color: var(--accent-teal);
+}
+
+.review-badge.badge-dup {
+    background-color: rgba(245, 158, 11, 0.15);
+    color: var(--warning);
+}
+
+.review-item.is-dup {
+    opacity: 0.75;
+}
+
+.review-item.is-dup:hover {
+    opacity: 1;
+    border-color: var(--warning);
+}
