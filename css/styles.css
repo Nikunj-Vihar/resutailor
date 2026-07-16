@@ -1604,36 +1604,50 @@ body.dark-mode {
    fixed bottom tab bar for navigation.
    ========================================================================== */
 @media (max-width: 768px) {
-    /* Top header: brand on the left, API key + delete on the right */
+    /* Top app bar: fixed height, brand left, compact API pill + delete right */
     .sidebar {
         flex-direction: row;
         align-items: center;
-        justify-content: space-between;
-        gap: 8px;
+        gap: 6px;
+        height: 56px;
+        padding: 0 12px;
         border-bottom: 1px solid var(--border-glass);
     }
     .sidebar-brand {
-        padding: 12px 14px;
+        padding: 0;
         border-bottom: none;
         flex-shrink: 0;
+        gap: 8px;
     }
     .brand-logo {
-        width: 34px;
-        height: 34px;
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+    }
+    .logo-icon {
+        width: 16px;
+        height: 16px;
     }
     .brand-text h1 {
-        font-size: 1.05rem;
+        font-size: 1rem;
     }
     .sidebar-footer {
         border-top: none;
-        padding: 8px 12px;
-        flex: 1;
-        justify-content: flex-end;
+        padding: 0;
+        margin-left: auto;
+        flex: 0 1 auto;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
         min-width: 0;
     }
     .api-status-btn {
         flex: 0 1 auto;
         width: auto;
+        padding: 8px 14px;
+        font-size: 0.78rem;
+        border-radius: 999px;
+        white-space: nowrap;
     }
     .api-status-btn .status-text {
         display: none;
@@ -1642,8 +1656,28 @@ body.dark-mode {
         display: inline;
     }
     .api-status-btn.keys-missing {
-        padding: 10px 14px;
-        font-size: 0.8rem;
+        padding: 8px 14px;
+        font-size: 0.78rem;
+        border-width: 1px;
+    }
+    /* Compact pill on phones: the colored pulse already says "do this first" —
+       drop the badge and arrow that made the button oversized */
+    .api-status-btn.keys-missing .api-btn-badge,
+    .api-status-btn.keys-missing .api-btn-arrow {
+        display: none;
+    }
+    .delete-all-btn {
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        justify-content: center;
+        border: 1px solid var(--border-glass);
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    .delete-all-btn i {
+        width: 15px;
+        height: 15px;
     }
 
     /* Bottom tab bar (iOS style): icon above a short label, evenly spread,
@@ -1672,9 +1706,10 @@ body.dark-mode {
         justify-content: center;
         gap: 3px;
         padding: 6px 4px;
+        min-height: 50px;
         font-size: 0.62rem;
         font-weight: 600;
-        border-radius: 10px;
+        border-radius: 12px;
         text-align: center;
         white-space: nowrap;
     }
@@ -1689,7 +1724,7 @@ body.dark-mode {
         display: block;
     }
     .nav-btn.active {
-        background: transparent;
+        background: rgba(99, 102, 241, 0.14);
         border-left: none;
         border-bottom: none;
         padding-left: 4px;
@@ -1726,8 +1761,15 @@ body.dark-mode {
         align-items: flex-start;
         gap: 12px;
     }
+    /* Action buttons: full-width and evenly split so rows never look ragged */
     .header-actions {
         flex-wrap: wrap;
+        width: 100%;
+    }
+    .header-actions .btn,
+    .form-actions .btn {
+        flex: 1 1 auto;
+        justify-content: center;
     }
     .tab-panel,
     .tailor-container {
@@ -1750,11 +1792,23 @@ body.dark-mode {
     .support-banner {
         align-items: flex-start;
     }
+
+    /* Modals become iOS-style bottom sheets */
+    .modal-overlay {
+        align-items: flex-end;
+        padding: 0;
+    }
     .modal-card {
-        max-height: 85vh;
+        max-width: 100%;
+        width: 100%;
+        border-radius: 18px 18px 0 0;
+        max-height: 88vh;
     }
     .modal-body {
-        max-height: 55vh;
+        max-height: 60vh;
+    }
+    .modal-footer {
+        padding-bottom: calc(16px + env(safe-area-inset-bottom));
     }
 }
 

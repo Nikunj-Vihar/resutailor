@@ -1,5 +1,13 @@
 # Changelog
 
+## v3.1.0 — Mobile header & polish
+
+- **Top app bar reworked**: fixed 56px height with brand on the left and a right-aligned compact API pill + round delete icon — no more oversized, unevenly spread buttons pushing each other
+- API setup button on phones is now a small rounded pill ("API Key") — the pulsing accent color carries the "do this first" signal; the bulky STEP 1 badge and arrow only show on desktop
+- Bottom tab bar: active tab gets a soft highlight pill; taller touch targets
+- Action buttons (Import, Save, Print, etc.) split the row evenly full-width on phones instead of ragged clusters
+- Modals now slide up as iOS-style bottom sheets with safe-area padding
+
 ## v3.0.1 — Fix "Error analyzing: … JSON" on AI responses
 
 - Fixed AI features failing with a JSON parse error: newer Gemini "thinking" models can split their answer across multiple response parts (and include thought parts) — the app now joins all non-thought parts instead of reading only the first
