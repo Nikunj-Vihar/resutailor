@@ -110,28 +110,62 @@ async function callGeminiJSON(apiKey, prompt) {
 
     try {
         let modelName = await resolveModel(apiKey);
-        let response = await attempt(modelName);
+        let lastError = null;
 
-        if (response.status === 404) {
-            // Cached model was retired/renamed since we last resolved it — re-resolve and retry once
-            modelName = await resolveModel(apiKey, { forceRefresh: true });
-            response = await attempt(modelName);
+        // Model output is stochastic — a malformed/incomplete JSON reply usually
+        // succeeds on a second attempt, so retry the generation once
+        for (let tries = 0; tries < 2; tries++) {
+            let response = await attempt(modelName);
+
+            if (response.status === 404) {
+                // Cached model was retired/renamed since we last resolved it — re-resolve and retry
+                modelName = await resolveModel(apiKey, { forceRefresh: true });
+                response = await attempt(modelName);
+            }
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error?.message || `HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const candidate = data.candidates?.[0];
+
+            // Newer "thinking" models can split the answer across several parts and
+            // may include thought parts — join every non-thought text part
+            let jsonText = (candidate?.content?.parts || [])
+                .filter(p => typeof p.text === 'string' && !p.thought)
+                .map(p => p.text)
+                .join('')
+                .trim();
+
+            // Strip markdown code fences if the model added them despite JSON mode
+            jsonText = jsonText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+
+            // Clamp to the outermost JSON object in case of stray surrounding text
+            const firstBrace = jsonText.indexOf('{');
+            const lastBrace = jsonText.lastIndexOf('}');
+            if (firstBrace !== -1 && lastBrace > firstBrace) {
+                jsonText = jsonText.slice(firstBrace, lastBrace + 1);
+            }
+
+            if (!jsonText) {
+                lastError = new Error("Received an empty response from the Gemini API. Please try again.");
+                continue;
+            }
+
+            try {
+                return JSON.parse(jsonText);
+            } catch (parseErr) {
+                console.error("Gemini returned unparseable JSON (attempt " + (tries + 1) + "):",
+                    candidate?.finishReason, jsonText.slice(0, 400));
+                lastError = candidate?.finishReason === 'MAX_TOKENS'
+                    ? new Error("The AI response was cut off because it ran too long. Try again, or trim very long entries in your persona.")
+                    : new Error("The AI returned an incomplete response. Please try again — this is usually temporary.");
+            }
         }
 
-        if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            const errMsg = errData.error?.message || `HTTP error! status: ${response.status}`;
-            throw new Error(errMsg);
-        }
-
-        const data = await response.json();
-        const jsonText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-        if (!jsonText) {
-            throw new Error("Received empty response from Gemini API.");
-        }
-
-        return JSON.parse(jsonText.trim());
+        throw lastError;
     } catch (e) {
         console.error("Gemini API execution failed:", e);
         throw e;

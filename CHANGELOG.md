@@ -1,5 +1,10 @@
 # Changelog
 
+## v3.0.1 — Fix "Error analyzing: … JSON" on AI responses
+
+- Fixed AI features failing with a JSON parse error: newer Gemini "thinking" models can split their answer across multiple response parts (and include thought parts) — the app now joins all non-thought parts instead of reading only the first
+- Hardened response handling: strips stray markdown fences, clamps to the outermost JSON object, automatically retries once on a malformed reply, and shows a clear message (including when the response was cut off for length)
+
 ## v3.0.0 — Professional redesign & mobile-native experience
 
 - **New color system**: replaced the multi-color purple/pink/teal mix with a professional three-tier palette — primary (indigo) for all interactive elements, secondary (light indigo) for gradients/highlights, tertiary (sky) for informational accents
