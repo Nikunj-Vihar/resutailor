@@ -12,11 +12,21 @@
     --text-secondary: hsl(215, 20%, 75%);
     --text-muted: hsl(215, 16%, 50%);
     
-    --accent-purple: hsl(263, 85%, 65%);
-    --accent-purple-glow: rgba(139, 92, 246, 0.3);
-    --accent-teal: hsl(172, 80%, 45%);
-    --accent-teal-glow: rgba(20, 184, 166, 0.25);
-    --accent-pink: hsl(325, 85%, 60%);
+    /* Professional 3-tier palette (indigo family):
+       primary   — main brand & interactive color (buttons, active states)
+       secondary — lighter companion for gradients & soft highlights
+       tertiary  — informational accents (badges, tags, hints), used sparingly */
+    --primary: hsl(239, 84%, 67%);
+    --primary-dark: hsl(243, 75%, 59%);
+    --secondary: hsl(234, 89%, 74%);
+    --tertiary: hsl(199, 89%, 60%);
+
+    /* Legacy aliases — historical names now mapped onto the 3-tier system */
+    --accent-purple: var(--primary);
+    --accent-purple-glow: rgba(99, 102, 241, 0.3);
+    --accent-teal: var(--tertiary);
+    --accent-teal-glow: rgba(56, 189, 248, 0.25);
+    --accent-pink: var(--secondary);
     
     --success: hsl(142, 70%, 45%);
     --danger: hsl(350, 80%, 55%);
@@ -31,7 +41,7 @@
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-fast: all 0.15s ease;
     --shadow-glow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-    --shadow-accent: 0 0 20px rgba(139, 92, 246, 0.25);
+    --shadow-accent: 0 0 20px rgba(99, 102, 241, 0.25);
 }
 
 /* Base Reset */
@@ -52,9 +62,9 @@ body {
 
 body.dark-mode {
     background-attachment: fixed;
-    background-image: 
-        radial-gradient(at 0% 0%, hsla(253, 60%, 15%, 0.4) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, hsla(275, 60%, 15%, 0.3) 0px, transparent 50%);
+    background-image:
+        radial-gradient(at 0% 0%, hsla(239, 55%, 15%, 0.4) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, hsla(225, 55%, 15%, 0.3) 0px, transparent 50%);
 }
 
 /* Scrollbars */
@@ -174,7 +184,7 @@ body.dark-mode {
 }
 
 .nav-btn.active {
-    background: linear-gradient(90deg, rgba(139, 92, 246, 0.15) 0%, rgba(139, 92, 246, 0.03) 100%);
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0.03) 100%);
     border-left: 3px solid var(--accent-purple);
     color: var(--text-primary);
     padding-left: 13px; /* account for border width to prevent layout jump */
@@ -186,13 +196,13 @@ body.dark-mode {
 
 .nav-btn-premium {
     margin-top: auto;
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%);
-    border: 1px dashed rgba(168, 85, 247, 0.3);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(129, 140, 248, 0.1) 100%);
+    border: 1px dashed rgba(99, 102, 241, 0.3);
     color: var(--text-primary);
 }
 
 .nav-btn-premium:hover {
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(129, 140, 248, 0.2) 100%);
     border-color: var(--accent-pink);
 }
 
@@ -231,6 +241,21 @@ body.dark-mode {
     flex-shrink: 0;
 }
 
+/* Long/short label pairs: full text on desktop, compact on phones.
+   nowrap prevents the label collapsing into a vertical letter-stack
+   when the button gets squeezed. */
+.status-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.status-text-short,
+.nav-label-short {
+    display: none;
+    white-space: nowrap;
+}
+
 .keys-configured .status-dot {
     background-color: var(--success);
     box-shadow: 0 0 8px var(--success);
@@ -248,7 +273,7 @@ body.dark-mode {
 
 .api-status-btn.keys-missing {
     padding: 14px 16px;
-    background: linear-gradient(135deg, rgba(20, 184, 166, 0.22) 0%, rgba(139, 92, 246, 0.22) 100%);
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.22) 0%, rgba(99, 102, 241, 0.22) 100%);
     border: 1.5px solid var(--accent-teal);
     color: var(--text-primary);
     font-weight: 700;
@@ -264,7 +289,7 @@ body.dark-mode {
     display: inline-flex;
     align-items: center;
     background: var(--accent-teal);
-    color: #04201c;
+    color: hsl(204, 80%, 12%);
     font-size: 0.65rem;
     font-weight: 800;
     letter-spacing: 0.03em;
@@ -286,12 +311,12 @@ body.dark-mode {
 .api-status-btn.keys-missing:hover {
     border-color: var(--accent-teal);
     transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(20, 184, 166, 0.3);
+    box-shadow: 0 6px 18px rgba(56, 189, 248, 0.3);
 }
 
 @keyframes apiKeyPulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(20, 184, 166, 0.35); }
-    50% { box-shadow: 0 0 0 7px rgba(20, 184, 166, 0); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.35); }
+    50% { box-shadow: 0 0 0 7px rgba(56, 189, 248, 0); }
 }
 
 .footer-credit {
@@ -388,7 +413,7 @@ body.dark-mode {
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
 }
 
 .btn-secondary {
@@ -403,7 +428,7 @@ body.dark-mode {
 }
 
 .btn-accent {
-    background: linear-gradient(135deg, var(--accent-teal), hsl(172, 85%, 35%));
+    background: linear-gradient(135deg, var(--tertiary), hsl(207, 90%, 48%));
     color: white;
 }
 
@@ -446,7 +471,7 @@ body.dark-mode {
 
 .hero-card {
     background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 27, 75, 0.5) 100%);
-    border-color: rgba(139, 92, 246, 0.2);
+    border-color: rgba(99, 102, 241, 0.2);
 }
 
 .hero-card h3 {
@@ -567,8 +592,8 @@ body.dark-mode {
     display: flex;
     gap: 16px;
     padding: 20px;
-    background: linear-gradient(90deg, rgba(20, 184, 166, 0.08) 0%, rgba(15, 23, 42, 0.4) 100%);
-    border: 1px solid rgba(20, 184, 166, 0.2);
+    background: linear-gradient(90deg, rgba(56, 189, 248, 0.08) 0%, rgba(15, 23, 42, 0.4) 100%);
+    border: 1px solid rgba(56, 189, 248, 0.2);
     border-radius: var(--radius-lg);
 }
 
@@ -704,6 +729,30 @@ body.dark-mode {
     margin-left: auto;
 }
 
+/* Phone number: compact country-code box + number field */
+.phone-input-row {
+    display: flex;
+    gap: 8px;
+}
+
+#contact-phone-code {
+    width: 74px;
+    flex-shrink: 0;
+    text-align: center;
+}
+
+#contact-phone {
+    flex: 1;
+    min-width: 0;
+}
+
+.tutorial-note {
+    margin-top: 10px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
 /* List managers inside Persona Tabs */
 .list-manager {
     display: flex;
@@ -729,7 +778,7 @@ body.dark-mode {
 }
 
 .manager-item:hover {
-    border-color: rgba(139, 92, 246, 0.3);
+    border-color: rgba(99, 102, 241, 0.3);
     background-color: hsla(224, 20%, 12%, 0.5);
 }
 
@@ -835,6 +884,12 @@ body.dark-mode {
     backdrop-filter: blur(8px);
 }
 
+/* Full-screen variant used for resume parsing / tech-stack inference */
+.global-loading {
+    position: fixed;
+    z-index: 1100;
+}
+
 .loading-spinner-wrapper {
     text-align: center;
     max-width: 420px;
@@ -921,7 +976,7 @@ body.dark-mode {
 
 .template-btn.active {
     border-color: var(--accent-purple);
-    background: linear-gradient(90deg, rgba(139, 92, 246, 0.1) 0%, transparent 100%);
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.1) 0%, transparent 100%);
     color: var(--text-primary);
     font-weight: 600;
 }
@@ -956,8 +1011,8 @@ body.dark-mode {
     display: flex;
     gap: 10px;
     padding: 12px;
-    background-color: rgba(139, 92, 246, 0.05);
-    border: 1px solid rgba(139, 92, 246, 0.15);
+    background-color: rgba(99, 102, 241, 0.05);
+    border: 1px solid rgba(99, 102, 241, 0.15);
     border-radius: var(--radius-md);
 }
 
@@ -1151,7 +1206,7 @@ body.dark-mode {
 }
 
 .premium-card {
-    border-color: rgba(139, 92, 246, 0.4);
+    border-color: rgba(99, 102, 241, 0.4);
     background: linear-gradient(135deg, rgba(15, 23, 42, 0.7) 0%, rgba(30, 27, 75, 0.3) 100%);
     box-shadow: var(--shadow-accent);
 }
@@ -1543,8 +1598,125 @@ body.dark-mode {
     }
 }
 
-/* Phone-size refinements */
-@media (max-width: 640px) {
+/* ==========================================================================
+   PHONE LAYOUT (≤768px) — native-app feel:
+   compact top header (brand + API key + delete) and an iOS-style
+   fixed bottom tab bar for navigation.
+   ========================================================================== */
+@media (max-width: 768px) {
+    /* Top header: brand on the left, API key + delete on the right */
+    .sidebar {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        border-bottom: 1px solid var(--border-glass);
+    }
+    .sidebar-brand {
+        padding: 12px 14px;
+        border-bottom: none;
+        flex-shrink: 0;
+    }
+    .brand-logo {
+        width: 34px;
+        height: 34px;
+    }
+    .brand-text h1 {
+        font-size: 1.05rem;
+    }
+    .sidebar-footer {
+        border-top: none;
+        padding: 8px 12px;
+        flex: 1;
+        justify-content: flex-end;
+        min-width: 0;
+    }
+    .api-status-btn {
+        flex: 0 1 auto;
+        width: auto;
+    }
+    .api-status-btn .status-text {
+        display: none;
+    }
+    .api-status-btn .status-text-short {
+        display: inline;
+    }
+    .api-status-btn.keys-missing {
+        padding: 10px 14px;
+        font-size: 0.8rem;
+    }
+
+    /* Bottom tab bar (iOS style): icon above a short label, evenly spread,
+       frosted background, safe-area aware */
+    .sidebar-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 900;
+        flex-direction: row;
+        justify-content: space-around;
+        align-items: stretch;
+        gap: 0;
+        padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+        background: hsla(224, 20%, 8%, 0.92);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border-top: 1px solid var(--border-glass);
+        overflow-x: visible;
+    }
+    .nav-btn {
+        flex: 1;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        padding: 6px 4px;
+        font-size: 0.62rem;
+        font-weight: 600;
+        border-radius: 10px;
+        text-align: center;
+        white-space: nowrap;
+    }
+    .nav-btn i {
+        width: 21px;
+        height: 21px;
+    }
+    .nav-btn .nav-label {
+        display: none;
+    }
+    .nav-btn .nav-label-short {
+        display: block;
+    }
+    .nav-btn.active {
+        background: transparent;
+        border-left: none;
+        border-bottom: none;
+        padding-left: 4px;
+        color: var(--primary);
+    }
+    .nav-btn.active i {
+        color: var(--primary);
+    }
+    .nav-btn-premium {
+        margin-top: 0;
+        background: transparent;
+        border: none;
+    }
+    .nav-btn-premium:hover {
+        background: transparent;
+    }
+
+    /* Clear the fixed bottom bar */
+    .main-content {
+        padding: 16px 16px 96px;
+    }
+
+    /* iOS zooms into inputs under 16px — keep fields at 16px on phones */
+    input, select, textarea {
+        font-size: 16px !important;
+    }
+
     .form-grid,
     .options-grid {
         grid-template-columns: 1fr;
@@ -1556,9 +1728,6 @@ body.dark-mode {
     }
     .header-actions {
         flex-wrap: wrap;
-    }
-    .main-content {
-        padding: 16px;
     }
     .tab-panel,
     .tailor-container {
@@ -1573,6 +1742,19 @@ body.dark-mode {
     }
     .btn-next-step {
         margin-left: 0; /* stack naturally when actions wrap into a column */
+    }
+    .dashboard-card,
+    .tab-container {
+        border-radius: 16px;
+    }
+    .support-banner {
+        align-items: flex-start;
+    }
+    .modal-card {
+        max-height: 85vh;
+    }
+    .modal-body {
+        max-height: 55vh;
     }
 }
 
@@ -1869,7 +2051,7 @@ body.dark-mode {
 }
 
 .review-badge.badge-new {
-    background-color: rgba(20, 184, 166, 0.15);
+    background-color: rgba(56, 189, 248, 0.15);
     color: var(--accent-teal);
 }
 

@@ -42,23 +42,28 @@
             <nav class="sidebar-nav">
                 <button class="nav-btn active" data-target="dashboard-view">
                     <i data-lucide="layout-dashboard"></i>
-                    <span>Dashboard</span>
+                    <span class="nav-label">Dashboard</span>
+                    <span class="nav-label-short">Home</span>
                 </button>
                 <button class="nav-btn" data-target="persona-view">
                     <i data-lucide="user"></i>
-                    <span>My Persona</span>
+                    <span class="nav-label">My Persona</span>
+                    <span class="nav-label-short">Persona</span>
                 </button>
                 <button class="nav-btn" data-target="tailor-view">
                     <i data-lucide="file-text"></i>
-                    <span>Tailor Resume</span>
+                    <span class="nav-label">Tailor Resume</span>
+                    <span class="nav-label-short">Tailor</span>
                 </button>
                 <button class="nav-btn" data-target="preview-view">
                     <i data-lucide="printer"></i>
-                    <span>Preview & Export</span>
+                    <span class="nav-label">Preview & Export</span>
+                    <span class="nav-label-short">Preview</span>
                 </button>
                 <button class="nav-btn nav-btn-premium" data-target="support-view">
                     <i data-lucide="heart"></i>
-                    <span>Support the Creator</span>
+                    <span class="nav-label">Support the Creator</span>
+                    <span class="nav-label-short">Support</span>
                 </button>
             </nav>
 
@@ -67,6 +72,7 @@
                     <span class="api-btn-badge">Step 1</span>
                     <span class="status-dot"></span>
                     <span class="status-text">Set Up Your Free API Key</span>
+                    <span class="status-text-short">API Key</span>
                     <i data-lucide="arrow-right" class="api-btn-arrow"></i>
                 </button>
                 <button id="btn-delete-all" class="delete-all-btn" title="Delete All My Data" aria-label="Delete All My Data">
@@ -74,7 +80,7 @@
                     <span>Delete All My Data</span>
                 </button>
                 <div class="footer-credit">
-                    <p>Secured Client-Side Only &middot; v2.2.0</p>
+                    <p>Secured Client-Side Only &middot; v3.0.0</p>
                 </div>
             </div>
         </aside>
@@ -207,7 +213,12 @@
                                     </div>
                                     <div class="form-group">
                                         <label for="contact-phone">Phone Number</label>
-                                        <input type="tel" id="contact-phone" placeholder="+91 98765 43210">
+                                        <div class="phone-input-row">
+                                            <input type="text" id="contact-phone-code" value="+91" maxlength="5"
+                                                aria-label="Country code" autocomplete="tel-country-code">
+                                            <input type="tel" id="contact-phone" placeholder="98765 43210"
+                                                autocomplete="tel-national">
+                                        </div>
                                     </div>
                                     <div class="form-group">
                                         <label for="contact-location">Location (City, Country)</label>
@@ -215,12 +226,12 @@
                                     </div>
                                     <div class="form-group">
                                         <label for="contact-linkedin">LinkedIn URL</label>
-                                        <input type="url" id="contact-linkedin"
-                                            placeholder="https://linkedin.com/in/johndoe">
+                                        <input type="text" id="contact-linkedin"
+                                            placeholder="linkedin.com/in/johndoe">
                                     </div>
                                     <div class="form-group">
                                         <label for="contact-github">GitHub / Portfolio URL</label>
-                                        <input type="url" id="contact-github" placeholder="https://github.com/johndoe">
+                                        <input type="text" id="contact-github" placeholder="github.com/johndoe">
                                     </div>
                                 </div>
                                 <div class="form-actions">
@@ -297,7 +308,7 @@
                                         <i data-lucide="cpu"></i>
                                         <span>Infer Tech Stack using AI</span>
                                     </button>
-                                    <button id="btn-goto-tailor" type="button" class="btn btn-secondary btn-icon btn-next-step">
+                                    <button id="btn-goto-tailor" type="button" class="btn btn-primary btn-icon btn-next-step">
                                         <span>Next: Tailor Resume</span>
                                         <i data-lucide="arrow-right"></i>
                                     </button>
@@ -506,13 +517,16 @@
                 <div class="tutorial-box">
                     <h4>How to get a FREE API Key:</h4>
                     <ol>
-                        <li>Go to Google AI Studio at <a href="https://aistudio.google.com/" target="_blank"
-                                rel="noopener">aistudio.google.com <i data-lucide="external-link"
+                        <li>Open the Google AI Studio API keys page: <a href="https://aistudio.google.com/apikey"
+                                target="_blank" rel="noopener">aistudio.google.com/apikey <i
+                                    data-lucide="external-link"
                                     style="display:inline-block; width:12px; height:12px;"></i></a></li>
-                        <li>Log in with any standard Google Workspace or Gmail account.</li>
-                        <li>Click <strong>"Get API key"</strong> on the top left.</li>
-                        <li>Click <strong>"Create API key"</strong>, copy it, and paste it below.</li>
+                        <li>Sign in with any Google account.</li>
+                        <li>Choose <strong>"Create API key"</strong> and follow the prompts.</li>
+                        <li>Copy the generated key and paste it below.</li>
                     </ol>
+                    <p class="tutorial-note">Google occasionally moves things around — if the page looks different,
+                        just look for a "Create API key" option.</p>
                 </div>
 
                 <div class="form-group" style="margin-top: 20px;">
@@ -547,6 +561,15 @@
             </div>
         </div>
     </div>
+    <!-- Full-screen loading overlay for resume parsing / tech-stack inference -->
+    <div id="global-loading" class="ai-loading-overlay global-loading" style="display: none;">
+        <div class="loading-spinner-wrapper">
+            <div class="loading-spinner"></div>
+            <h3 id="global-loading-title">Working...</h3>
+            <p id="global-loading-subtitle">This usually takes a few seconds.</p>
+        </div>
+    </div>
+
     <!-- Modal: Resume Import Review (confirm what gets merged into the persona) -->
     <div id="modal-import-review" class="modal-overlay">
         <div class="modal-card modal-card-wide">

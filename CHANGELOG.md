@@ -1,5 +1,16 @@
 # Changelog
 
+## v3.0.0 — Professional redesign & mobile-native experience
+
+- **New color system**: replaced the multi-color purple/pink/teal mix with a professional three-tier palette — primary (indigo) for all interactive elements, secondary (light indigo) for gradients/highlights, tertiary (sky) for informational accents
+- **Mobile rework**: iOS-style fixed bottom tab bar with icons and short labels, compact top header with brand + API key + delete, 16px inputs (no more iOS auto-zoom), safe-area support; fixed the API key button text collapsing into a vertical letter-stack
+- **Loading overlays**: full-screen progress screens with staged status text during resume parsing and tech-stack inference — no more wondering if it's stuck
+- **Phone field**: separate country-code box (defaults to +91) + number field; numbers stored space-free and normalized on both manual entry and resume import
+- **URL fields**: no more cryptic "Enter a URL" browser errors — bare links like linkedin.com/in/you are accepted and auto-prefixed with https://
+- **Import review**: contact note renamed to "Fields retrieved"; fixed Safari not pre-selecting new entries (checkbox state now set via DOM property)
+- **Clearer outcomes**: tech-stack inference popup now reports exactly what was found (languages/frameworks/databases/other counts)
+- **Guidance**: API key guide now links straight to aistudio.google.com/apikey with layout-agnostic wording; "Next: Tailor Resume" is now a colored primary action
+
 ## v2.2.0 — Mobile fixes & guided flow
 
 - **Fixed:** on phones/tablets (≤1024px) the sidebar footer was hidden entirely, making the API key setup and Delete All Data buttons unreachable — it now collapses into a compact row instead

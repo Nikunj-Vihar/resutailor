@@ -29,6 +29,40 @@ function esc(value) {
         .replace(/'/g, '&#39;');
 }
 
+// Normalizes any phone string into "+CC NUMBER" (defaults to India's +91 when
+// no country code is present); digits only in the number part
+function normalizePhone(raw) {
+    const trimmed = String(raw ?? '').trim();
+    if (!trimmed) return '';
+    const match = trimmed.match(/^\+(\d{1,4})[\s.-]*(.*)$/);
+    const code = match ? `+${match[1]}` : '+91';
+    const number = (match ? match[2] : trimmed).replace(/\D/g, '');
+    return number ? `${code} ${number}` : '';
+}
+
+// Prepends https:// to bare URLs like "linkedin.com/in/x" so links stay clickable
+function normalizeUrl(raw) {
+    const trimmed = String(raw ?? '').trim();
+    if (!trimmed) return '';
+    return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
+
+// Full-screen progress overlay for AI operations (PDF parsing, tech-stack inference)
+function showGlobalLoading(title, subtitle) {
+    document.getElementById('global-loading-title').textContent = title;
+    document.getElementById('global-loading-subtitle').textContent = subtitle;
+    document.getElementById('global-loading').style.display = 'flex';
+}
+
+function updateGlobalLoading(title, subtitle) {
+    document.getElementById('global-loading-title').textContent = title;
+    document.getElementById('global-loading-subtitle').textContent = subtitle;
+}
+
+function hideGlobalLoading() {
+    document.getElementById('global-loading').style.display = 'none';
+}
+
 // State Managers / Save Helpers
 function saveProfileToLocalStorage() {
     localStorage.setItem('resutailor_profile', JSON.stringify(state.profile));
@@ -209,15 +243,21 @@ function initPersonaHandlers() {
     const contactForm = document.getElementById('form-contact');
     contactForm.addEventListener('submit', (e) => {
         e.preventDefault();
+
+        const rawCode = document.getElementById('contact-phone-code').value.replace(/\D/g, '');
+        const rawNumber = document.getElementById('contact-phone').value.replace(/\D/g, '');
+        const phone = rawNumber ? `+${rawCode || '91'} ${rawNumber}` : '';
+
         state.profile.contact = {
             fullname: document.getElementById('contact-fullname').value.trim(),
             email: document.getElementById('contact-email').value.trim(),
-            phone: document.getElementById('contact-phone').value.trim(),
+            phone,
             location: document.getElementById('contact-location').value.trim(),
-            linkedin: document.getElementById('contact-linkedin').value.trim(),
-            github: document.getElementById('contact-github').value.trim()
+            linkedin: normalizeUrl(document.getElementById('contact-linkedin').value),
+            github: normalizeUrl(document.getElementById('contact-github').value)
         };
         saveProfileToLocalStorage();
+        populateFormsFromState(); // reflect the normalized values back into the form
         alert('Contact information saved successfully!');
     });
 
@@ -257,9 +297,7 @@ function initPersonaHandlers() {
         }
 
         inferBtn.disabled = true;
-        const origText = inferBtn.innerHTML;
-        inferBtn.innerHTML = `<i data-lucide="loader" class="spin"></i> <span>Analyzing Persona...</span>`;
-        if (window.lucide) window.lucide.createIcons();
+        showGlobalLoading('Analyzing Your Persona...', 'The AI is scanning your experiences and projects to identify every technology you have worked with. Takes about 10 seconds.');
 
         try {
             const result = await inferTechStack(state.apiKey, {
@@ -273,7 +311,7 @@ function initPersonaHandlers() {
                 document.getElementById('skills-frameworks').value = result.frameworks?.join(', ') || '';
                 document.getElementById('skills-databases').value = result.databases?.join(', ') || '';
                 document.getElementById('skills-custom').value = result.custom?.join(', ') || '';
-                
+
                 // Trigger save
                 state.profile.skills = {
                     languages: result.languages?.join(', ') || '',
@@ -282,14 +320,20 @@ function initPersonaHandlers() {
                     custom: result.custom?.join(', ') || ''
                 };
                 saveProfileToLocalStorage();
-                alert("AI successfully inferred your tech stack from experiences and projects!");
+
+                const counts = [
+                    `${result.languages?.length || 0} languages`,
+                    `${result.frameworks?.length || 0} frameworks/libraries`,
+                    `${result.databases?.length || 0} databases/tools`,
+                    `${result.custom?.length || 0} other skills`
+                ].join(', ');
+                alert(`Tech stack updated!\n\nThe AI found: ${counts}.\n\nThe skill fields on this page now hold the full list — review and adjust them, then hit Save Skills.`);
             }
         } catch (err) {
             alert(`Error analyzing: ${err.message}`);
         } finally {
             inferBtn.disabled = false;
-            inferBtn.innerHTML = origText;
-            if (window.lucide) window.lucide.createIcons();
+            hideGlobalLoading();
         }
     });
 
@@ -320,9 +364,7 @@ function initPersonaHandlers() {
         if (!file) return;
 
         pdfImportBtn.disabled = true;
-        const origHTML = pdfImportBtn.innerHTML;
-        pdfImportBtn.innerHTML = `<i data-lucide="loader" class="spin"></i> <span>Extracting & Parsing...</span>`;
-        if (window.lucide) window.lucide.createIcons();
+        showGlobalLoading('Reading Your Resume...', `Extracting the text from ${file.name} — this happens entirely in your browser.`);
 
         try {
             let rawText;
@@ -336,6 +378,8 @@ function initPersonaHandlers() {
                 throw new Error('Could not extract readable text. If your PDF is a scanned image, export a text-based PDF instead or fill in the forms manually.');
             }
 
+            updateGlobalLoading('Structuring Your Details...', 'The AI is organizing what it found into experiences, projects, education, and skills. Takes about 10-15 seconds.');
+
             const parsed = await parseResumeText(state.apiKey, rawText);
             // Merge, don't replace: show the review screen so the user confirms
             // what gets added to the persona (supports importing several resumes)
@@ -344,8 +388,7 @@ function initPersonaHandlers() {
             alert(`Resume import failed: ${err.message}`);
         } finally {
             pdfImportBtn.disabled = false;
-            pdfImportBtn.innerHTML = origHTML;
-            if (window.lucide) window.lucide.createIcons();
+            hideGlobalLoading();
         }
     });
 
@@ -432,7 +475,9 @@ function computeImportPlan(parsed) {
     const plan = { contactUpdates: {}, skillsAdded: {}, items: [] };
 
     ['fullname', 'email', 'phone', 'location', 'linkedin', 'github'].forEach(field => {
-        const incoming = String(parsed.contact?.[field] || '').trim();
+        let incoming = String(parsed.contact?.[field] || '').trim();
+        if (field === 'phone') incoming = normalizePhone(incoming);
+        if (field === 'linkedin' || field === 'github') incoming = normalizeUrl(incoming);
         if (incoming && !String(state.profile.contact[field] || '').trim()) {
             plan.contactUpdates[field] = incoming;
         }
@@ -497,7 +542,7 @@ function showImportReviewModal(plan) {
         html += `<p class="modal-intro">Here's what this resume adds to your Persona. New entries are pre-selected; entries that look like duplicates of what you already have are unchecked — tick them only if they're genuinely different.</p>`;
 
         if (contactFields.length) {
-            html += `<div class="review-auto-note"><strong>Empty contact fields to fill:</strong> ${contactFields.map(f => esc(`${f}: ${plan.contactUpdates[f]}`)).join(' · ')}</div>`;
+            html += `<div class="review-auto-note"><strong>Fields retrieved:</strong> ${contactFields.map(f => esc(`${f}: ${plan.contactUpdates[f]}`)).join(' · ')}</div>`;
         }
         if (skillGroups.length) {
             const allSkills = skillGroups.flatMap(([, list]) => list);
@@ -515,7 +560,7 @@ function showImportReviewModal(plan) {
                     : (item.entry.period || '');
                 html += `
                     <label class="review-item ${item.isDuplicate ? 'is-dup' : ''}">
-                        <input type="checkbox" data-item-index="${idx}" ${item.isDuplicate ? '' : 'checked'}>
+                        <input type="checkbox" data-item-index="${idx}">
                         <div class="review-item-content">
                             <div class="review-item-title">
                                 <span>${esc(importItemTitle(section, item.entry))}</span>
@@ -529,6 +574,13 @@ function showImportReviewModal(plan) {
     }
 
     body.innerHTML = html;
+
+    // Set checkbox state via the DOM property rather than the HTML attribute —
+    // Safari doesn't reliably honor the `checked` attribute in injected markup
+    body.querySelectorAll('input[type="checkbox"][data-item-index]').forEach(cb => {
+        cb.checked = !plan.items[Number(cb.dataset.itemIndex)].isDuplicate;
+    });
+
     applyBtn.style.display = hasAnything ? '' : 'none';
     modal.classList.add('active');
 
@@ -566,7 +618,13 @@ function populateFormsFromState() {
     // Contact
     document.getElementById('contact-fullname').value = state.profile.contact.fullname || '';
     document.getElementById('contact-email').value = state.profile.contact.email || '';
-    document.getElementById('contact-phone').value = state.profile.contact.phone || '';
+
+    // Phone splits into country code + number fields (default code: +91)
+    const storedPhone = String(state.profile.contact.phone || '').trim();
+    const phoneMatch = storedPhone.match(/^\+(\d{1,4})[\s.-]*(.*)$/);
+    document.getElementById('contact-phone-code').value = phoneMatch ? `+${phoneMatch[1]}` : '+91';
+    document.getElementById('contact-phone').value = (phoneMatch ? phoneMatch[2] : storedPhone).replace(/\D/g, '');
+
     document.getElementById('contact-location').value = state.profile.contact.location || '';
     document.getElementById('contact-linkedin').value = state.profile.contact.linkedin || '';
     document.getElementById('contact-github').value = state.profile.contact.github || '';
