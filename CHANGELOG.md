@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.2.1 — Remove redundant Dashboard tech-stack button
+
+- Removed "Re-analyze Tech Stack" from the Dashboard — it only ever jumped to the Skills tab and clicked that tab's "Infer Tech Stack using AI" button, so it was a duplicate entry point rather than a separate feature. Use the Skills tab button directly.
+
 ## v3.2.0 — Themes, in-app notifications & refined look
 
 - **Dark/light mode**: toggle at the top right (sun/moon), preference remembered; full light theme with all surfaces/text re-tokenized

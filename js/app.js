@@ -430,14 +430,6 @@ function initPersonaHandlers() {
         }
     });
 
-    // Re-analyze on Dashboard
-    const dashboardReanalyzeBtn = document.getElementById('btn-analyze-tech');
-    dashboardReanalyzeBtn.addEventListener('click', () => {
-        document.querySelector('.tab-btn[data-tab="skills-tab"]').click();
-        document.querySelector('.sidebar-nav .nav-btn[data-target="persona-view"]').click();
-        setTimeout(() => inferBtn.click(), 300);
-    });
-
     // 3.5 Import from Resume PDF (client-side text extraction + AI parsing)
     const pdfImportBtn = document.getElementById('btn-import-resume-pdf');
     const pdfInput = document.getElementById('resume-pdf-input');
@@ -1321,8 +1313,6 @@ function updateDashboardStats() {
     const tagsContainer = document.getElementById('tech-tags-container');
     tagsContainer.innerHTML = '';
 
-    const listBtn = document.getElementById('btn-analyze-tech');
-
     if (allSkills.length > 0) {
         let tagCount = 0;
         allSkills.join(',').split(',').map(s => s.trim()).filter(s => s !== '').forEach(tag => {
@@ -1333,11 +1323,9 @@ function updateDashboardStats() {
             tagCount++;
         });
         document.getElementById('stat-skills').textContent = tagCount;
-        listBtn.style.display = 'inline-flex';
     } else {
         document.getElementById('stat-skills').textContent = '0';
         tagsContainer.innerHTML = `<span class="placeholder-tag">No tech stack detected yet. Add details in Persona.</span>`;
-        listBtn.style.display = 'none';
     }
 }
 
