@@ -80,7 +80,7 @@
                     <span>Delete All My Data</span>
                 </button>
                 <div class="footer-credit">
-                    <p>Secured Client-Side Only &middot; v3.1.0</p>
+                    <p>Secured Client-Side Only &middot; v3.2.0</p>
                 </div>
             </div>
         </aside>
@@ -105,7 +105,13 @@
                                 <li>
                                     <div class="step-num">1</div>
                                     <div class="step-desc"><strong>Enter your Gemini API Key</strong>. It's 100% free
-                                        and takes 30 seconds.</div>
+                                        and takes 30 seconds.
+                                        <br>
+                                        <button id="btn-qs-api" type="button" class="btn btn-primary btn-sm btn-icon qs-api-btn">
+                                            <i data-lucide="key"></i>
+                                            <span>Set Up API Key Now</span>
+                                        </button>
+                                    </div>
                                 </li>
                                 <li>
                                     <div class="step-num">2</div>
@@ -561,6 +567,31 @@
             </div>
         </div>
     </div>
+    <!-- Dark/light theme toggle -->
+    <button id="btn-theme-toggle" class="theme-toggle print-hidden" aria-label="Toggle light or dark mode">
+        <i data-lucide="sun"></i>
+    </button>
+
+    <!-- Toast notifications -->
+    <div id="toast-container" class="toast-container print-hidden" aria-live="polite"></div>
+
+    <!-- Modal: in-app confirmation dialog (replaces browser confirm popups) -->
+    <div id="modal-confirm" class="modal-overlay">
+        <div class="modal-card modal-card-sm">
+            <div class="modal-header">
+                <h3 id="confirm-title">Please Confirm</h3>
+                <button class="modal-close" id="btn-confirm-x">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="confirm-message" style="white-space: pre-line;"></p>
+            </div>
+            <div class="modal-footer confirm-footer">
+                <button id="btn-confirm-cancel" class="btn btn-secondary">Cancel</button>
+                <button id="btn-confirm-ok" class="btn btn-primary">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Full-screen loading overlay for resume parsing / tech-stack inference -->
     <div id="global-loading" class="ai-loading-overlay global-loading" style="display: none;">
         <div class="loading-spinner-wrapper">

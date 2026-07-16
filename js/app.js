@@ -29,6 +29,75 @@ function esc(value) {
         .replace(/'/g, '&#39;');
 }
 
+// --- Theme (dark/light) ---
+const THEME_KEY = 'resutailor_theme';
+
+function applyTheme(theme) {
+    document.body.classList.toggle('light-mode', theme === 'light');
+    document.body.classList.toggle('dark-mode', theme !== 'light');
+    const btn = document.getElementById('btn-theme-toggle');
+    // Show the mode you'd switch TO
+    btn.innerHTML = `<i data-lucide="${theme === 'light' ? 'moon' : 'sun'}"></i>`;
+    if (window.lucide) window.lucide.createIcons();
+    localStorage.setItem(THEME_KEY, theme);
+}
+
+function initThemeToggle() {
+    applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
+    document.getElementById('btn-theme-toggle').addEventListener('click', () => {
+        const isLight = document.body.classList.contains('light-mode');
+        applyTheme(isLight ? 'dark' : 'light');
+    });
+}
+
+// --- In-app notifications (replace browser alert/confirm popups) ---
+
+// Toast: brief, non-blocking notice. type: 'success' | 'error' | 'info'
+function notify(message, type = 'info', duration = 4200) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    const icons = { success: 'check-circle', error: 'alert-circle', info: 'info' };
+    toast.innerHTML = `<i data-lucide="${icons[type] || 'info'}"></i><span>${esc(message)}</span>`;
+    container.appendChild(toast);
+    if (window.lucide) window.lucide.createIcons();
+
+    let dismissed = false;
+    const dismiss = () => {
+        if (dismissed) return;
+        dismissed = true;
+        toast.classList.add('hide');
+        setTimeout(() => toast.remove(), 260);
+    };
+    toast.addEventListener('click', dismiss);
+    setTimeout(dismiss, duration);
+}
+
+// Modal confirmation returning a Promise<boolean>
+function appConfirm(message, { title = 'Please Confirm', confirmText = 'Confirm', danger = false } = {}) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('modal-confirm');
+        document.getElementById('confirm-title').textContent = title;
+        document.getElementById('confirm-message').textContent = message;
+
+        const okBtn = document.getElementById('btn-confirm-ok');
+        okBtn.textContent = confirmText;
+        okBtn.classList.toggle('btn-danger', danger);
+        okBtn.classList.toggle('btn-primary', !danger);
+
+        const done = (result) => {
+            modal.classList.remove('active');
+            resolve(result);
+        };
+        okBtn.onclick = () => done(true);
+        document.getElementById('btn-confirm-cancel').onclick = () => done(false);
+        document.getElementById('btn-confirm-x').onclick = () => done(false);
+        modal.onclick = (e) => { if (e.target === modal) done(false); };
+
+        modal.classList.add('active');
+    });
+}
+
 // Normalizes any phone string into "+CC NUMBER" (defaults to India's +91 when
 // no country code is present); digits only in the number part
 function normalizePhone(raw) {
@@ -98,6 +167,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Danger zone: full local data wipe
     initDangerZone();
+
+    // Dark/light theme
+    initThemeToggle();
+
+    // Quick Start step 1 opens the API key modal (primary path on mobile,
+    // where the sidebar API button is hidden)
+    document.getElementById('btn-qs-api').addEventListener('click', () => {
+        document.getElementById('btn-api-settings').click();
+    });
 
     // Clean up license data from the old subscription model
     localStorage.removeItem('resutailor_license_key');
@@ -180,7 +258,7 @@ function initApiSettingsHandlers() {
         
         if (!inputKey) {
             saveApiKey('');
-            alert('API key cleared.');
+            notify('API key cleared.', 'info');
             saveBtn.disabled = false;
             saveBtn.textContent = "Save API Key";
             apiModal.classList.remove('active');
@@ -194,9 +272,9 @@ function initApiSettingsHandlers() {
         if (isValid) {
             saveApiKey(inputKey);
             apiModal.classList.remove('active');
-            alert('Gemini API key verified and saved successfully!');
+            notify('Gemini API key verified and saved successfully!', 'success');
         } else {
-            alert('Invalid API key. Please check your key and try again.');
+            notify('Invalid API key. Please check your key and try again.', 'error');
         }
     });
 }
@@ -214,6 +292,21 @@ function updateApiStatusUI() {
         statusBtn.classList.remove('keys-configured');
         statusBtn.classList.add('keys-missing');
         statusText.textContent = "Set Up Your Free API Key";
+    }
+
+    // Mirror the state on the Quick Start step-1 button
+    const qsBtn = document.getElementById('btn-qs-api');
+    if (qsBtn) {
+        if (state.apiKey) {
+            qsBtn.classList.add('configured');
+            qsBtn.classList.remove('btn-primary');
+            qsBtn.innerHTML = `<i data-lucide="check-circle"></i><span>API Key Configured</span>`;
+        } else {
+            qsBtn.classList.remove('configured');
+            qsBtn.classList.add('btn-primary');
+            qsBtn.innerHTML = `<i data-lucide="key"></i><span>Set Up API Key Now</span>`;
+        }
+        if (window.lucide) window.lucide.createIcons();
     }
 }
 
@@ -258,7 +351,7 @@ function initPersonaHandlers() {
         };
         saveProfileToLocalStorage();
         populateFormsFromState(); // reflect the normalized values back into the form
-        alert('Contact information saved successfully!');
+        notify('Contact information saved!', 'success');
     });
 
     // 3.3 Skills Form Submit
@@ -272,7 +365,7 @@ function initPersonaHandlers() {
             custom: document.getElementById('skills-custom').value.trim()
         };
         saveProfileToLocalStorage();
-        alert('Skills list updated!');
+        notify('Skills list updated!', 'success');
     });
 
     // Next step: silently save the skills, then move on to tailoring
@@ -291,7 +384,7 @@ function initPersonaHandlers() {
     const inferBtn = document.getElementById('btn-trigger-ai-tech');
     inferBtn.addEventListener('click', async () => {
         if (!state.apiKey) {
-            alert("Please configure a Gemini API key first before using AI functions.");
+            notify('Please configure a Gemini API key first before using AI functions.', 'info');
             document.getElementById('btn-api-settings').click();
             return;
         }
@@ -327,10 +420,10 @@ function initPersonaHandlers() {
                     `${result.databases?.length || 0} databases/tools`,
                     `${result.custom?.length || 0} other skills`
                 ].join(', ');
-                alert(`Tech stack updated!\n\nThe AI found: ${counts}.\n\nThe skill fields on this page now hold the full list — review and adjust them, then hit Save Skills.`);
+                notify(`Tech stack updated! The AI found: ${counts}.\nReview the skill fields below, then hit Save Skills.`, 'success', 9000);
             }
         } catch (err) {
-            alert(`Error analyzing: ${err.message}`);
+            notify(`Error analyzing: ${err.message}`, 'error', 8000);
         } finally {
             inferBtn.disabled = false;
             hideGlobalLoading();
@@ -351,7 +444,7 @@ function initPersonaHandlers() {
 
     pdfImportBtn.addEventListener('click', () => {
         if (!state.apiKey) {
-            alert('Importing from a PDF uses AI parsing. Please configure your Gemini API key first.');
+            notify('Importing from a PDF uses AI parsing. Please configure your Gemini API key first.', 'info');
             document.getElementById('btn-api-settings').click();
             return;
         }
@@ -385,7 +478,7 @@ function initPersonaHandlers() {
             // what gets added to the persona (supports importing several resumes)
             showImportReviewModal(computeImportPlan(parsed));
         } catch (err) {
-            alert(`Resume import failed: ${err.message}`);
+            notify(`Resume import failed: ${err.message}`, 'error', 8000);
         } finally {
             pdfImportBtn.disabled = false;
             hideGlobalLoading();
@@ -610,7 +703,7 @@ function showImportReviewModal(plan) {
         const extras = [];
         if (contactFields.length) extras.push(`${contactFields.length} contact field${contactFields.length === 1 ? '' : 's'} filled`);
         if (skillGroups.length) extras.push('new skills merged');
-        alert(`Import complete! Added ${addedCount} entr${addedCount === 1 ? 'y' : 'ies'}${extras.length ? ` (${extras.join(', ')})` : ''}. Review the Persona tabs to fine-tune.`);
+        notify(`Import complete! Added ${addedCount} entr${addedCount === 1 ? 'y' : 'ies'}${extras.length ? ` (${extras.join(', ')})` : ''}. Review the Persona tabs to fine-tune.`, 'success', 7000);
     };
 }
 
@@ -697,11 +790,17 @@ function renderPersonaList(section, elementId) {
     if (window.lucide) window.lucide.createIcons();
 }
 
-function deleteItem(section, index) {
-    if (confirm("Are you sure you want to delete this entry?")) {
+async function deleteItem(section, index) {
+    const confirmed = await appConfirm('Are you sure you want to delete this entry?', {
+        title: 'Delete Entry',
+        confirmText: 'Delete',
+        danger: true
+    });
+    if (confirmed) {
         state.profile[section].splice(index, 1);
         saveProfileToLocalStorage();
         renderAllPersonaLists();
+        notify('Entry deleted.', 'info');
     }
 }
 
@@ -829,7 +928,7 @@ function openItemEditor(section, index) {
 
         // Validate basic parameters
         if (!entry[Object.keys(entry)[0]] || !entry[Object.keys(entry)[1]]) {
-            alert('Please fill out the required primary fields.');
+            notify('Please fill out the required primary fields.', 'error');
             return;
         }
 
@@ -868,7 +967,7 @@ function initTailorHandlers() {
     btnTailor.addEventListener('click', async () => {
         // Validation Checks
         if (!state.apiKey) {
-            alert('Please configure your Gemini API Key first.');
+            notify('Please configure your Gemini API Key first.', 'info');
             document.getElementById('btn-api-settings').click();
             return;
         }
@@ -880,13 +979,13 @@ function initTailorHandlers() {
         const length = document.getElementById('tailor-pages').value;
 
         if (!jobTitle || !companyName || !jdText) {
-            alert('Please fill in target job title, company name, and copy-paste the Job Description.');
+            notify('Please fill in target job title, company name, and copy-paste the Job Description.', 'error');
             return;
         }
 
         // Ensure user has profile details
         if (state.profile.experience.length === 0 && state.profile.projects.length === 0) {
-            alert('Your Master Persona is empty! Please add experiences or projects in the "My Persona" tab first.');
+            notify('Your Master Persona is empty! Please add experiences or projects in the "My Persona" tab first.', 'error', 6000);
             document.querySelector('.sidebar-nav .nav-btn[data-target="persona-view"]').click();
             return;
         }
@@ -939,7 +1038,7 @@ function initTailorHandlers() {
             }
         } catch (err) {
             clearInterval(stepInterval);
-            alert(`Tailoring failed: ${err.message}`);
+            notify(`Tailoring failed: ${err.message}`, 'error', 8000);
         } finally {
             aiLoading.style.display = 'none';
         }
@@ -999,7 +1098,7 @@ function initPreviewHandlers() {
 
     editBtn.addEventListener('click', () => {
         if (!state.tailoredResume && !localStorage.getItem(EDITED_RESUME_KEY)) {
-            alert('Generate a tailored resume first — then you can fine-tune its wording here.');
+            notify('Generate a tailored resume first — then you can fine-tune its wording here.', 'info');
             return;
         }
         setSheetEditing(!isEditingSheet);
@@ -1011,15 +1110,21 @@ function initPreviewHandlers() {
     });
 
     // Discard manual edits and restore the AI-generated version
-    document.getElementById('btn-reset-edits').addEventListener('click', () => {
+    document.getElementById('btn-reset-edits').addEventListener('click', async () => {
         if (!localStorage.getItem(EDITED_RESUME_KEY)) {
-            alert('No manual edits to reset — you are already viewing the AI-generated version.');
+            notify('No manual edits to reset — you are already viewing the AI-generated version.', 'info');
             return;
         }
-        if (!confirm('Discard your manual edits and restore the AI-generated version?')) return;
+        const confirmed = await appConfirm('Discard your manual edits and restore the AI-generated version?', {
+            title: 'Reset Edits',
+            confirmText: 'Reset',
+            danger: true
+        });
+        if (!confirmed) return;
         setSheetEditing(false, { save: false });
         localStorage.removeItem(EDITED_RESUME_KEY);
         renderResumePreview();
+        notify('Restored the AI-generated version.', 'success');
     });
 
     // Native PDF print command (exits edit mode first so edits are saved and no editing outline prints)
@@ -1171,10 +1276,8 @@ function syncPreviewSectionToggles(sheet) {
 
 // 5b. DANGER ZONE — permanently wipe every trace of the user's data from this browser
 function initDangerZone() {
-    document.getElementById('btn-delete-all').addEventListener('click', () => {
+    document.getElementById('btn-delete-all').addEventListener('click', async () => {
         const msg = [
-            'Delete ALL your ResuTailor data from this browser?',
-            '',
             'This permanently removes:',
             '• Your Master Persona (contact, education, experience, projects, skills)',
             '• Your generated resume and any manual edits to it',
@@ -1183,17 +1286,22 @@ function initDangerZone() {
             '',
             'PDFs you already downloaded are NOT affected, and uploaded resume files were never stored anywhere.',
             '',
-            'This cannot be undone. Are you sure?'
+            'This cannot be undone.'
         ].join('\n');
 
-        if (!confirm(msg)) return;
+        const confirmed = await appConfirm(msg, {
+            title: 'Delete ALL Your Data?',
+            confirmText: 'Delete Everything',
+            danger: true
+        });
+        if (!confirmed) return;
 
         Object.keys(localStorage)
             .filter(key => key.startsWith('resutailor_'))
             .forEach(key => localStorage.removeItem(key));
 
-        alert('All your ResuTailor data has been deleted from this browser.');
-        location.reload();
+        notify('All your ResuTailor data has been deleted from this browser.', 'success');
+        setTimeout(() => location.reload(), 1000);
     });
 }
 
@@ -1259,7 +1367,7 @@ function initSupportBanner() {
             copyUpiBtn.textContent = 'Copied!';
             setTimeout(() => { copyUpiBtn.textContent = 'Copy UPI ID'; }, 2000);
         } catch {
-            prompt('Copy the UPI ID below:', upiId);
+            notify(`Couldn't access the clipboard — the UPI ID is: ${upiId}`, 'info', 8000);
         }
     });
 }

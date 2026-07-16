@@ -21,12 +21,18 @@
     --secondary: hsl(234, 89%, 74%);
     --tertiary: hsl(199, 89%, 60%);
 
+    --tertiary-strong: hsl(203, 80%, 42%); /* solid-button variant of tertiary with white-text contrast */
+
     /* Legacy aliases — historical names now mapped onto the 3-tier system */
     --accent-purple: var(--primary);
     --accent-purple-glow: rgba(99, 102, 241, 0.3);
     --accent-teal: var(--tertiary);
     --accent-teal-glow: rgba(56, 189, 248, 0.25);
     --accent-pink: var(--secondary);
+
+    /* Surfaces that need per-theme values beyond the base tokens */
+    --overlay-bg: rgba(15, 23, 42, 0.92);
+    --nav-mobile-bg: hsla(224, 20%, 8%, 0.92);
     
     --success: hsl(142, 70%, 45%);
     --danger: hsl(350, 80%, 55%);
@@ -65,6 +71,31 @@ body.dark-mode {
     background-image:
         radial-gradient(at 0% 0%, hsla(239, 55%, 15%, 0.4) 0px, transparent 50%),
         radial-gradient(at 100% 100%, hsla(225, 55%, 15%, 0.3) 0px, transparent 50%);
+}
+
+/* Light theme: overrides the surface/text tokens; brand colors stay identical */
+body.light-mode {
+    --bg-primary: hsl(220, 30%, 97%);
+    --bg-secondary: hsl(0, 0%, 100%);
+    --bg-tertiary: hsl(220, 22%, 93%);
+    --bg-glass: rgba(255, 255, 255, 0.8);
+    --border-glass: rgba(15, 23, 42, 0.09);
+    --text-primary: hsl(224, 35%, 12%);
+    --text-secondary: hsl(224, 15%, 32%);
+    --text-muted: hsl(220, 10%, 48%);
+    --shadow-glow: 0 8px 28px rgba(15, 23, 42, 0.07);
+    --shadow-accent: 0 0 20px rgba(99, 102, 241, 0.15);
+    --overlay-bg: rgba(248, 250, 252, 0.94);
+    --nav-mobile-bg: hsla(0, 0%, 100%, 0.94);
+    background-image: none;
+}
+
+body.light-mode .hero-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(238, 242, 255, 0.8) 100%);
+}
+
+body.light-mode .btn-secondary:hover {
+    background-color: hsl(220, 20%, 88%);
 }
 
 /* Scrollbars */
@@ -407,13 +438,13 @@ body.dark-mode {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+    background: var(--primary);
     color: white;
 }
 
 .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    background: var(--primary-dark);
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
 }
 
 .btn-secondary {
@@ -428,13 +459,24 @@ body.dark-mode {
 }
 
 .btn-accent {
-    background: linear-gradient(135deg, var(--tertiary), hsl(207, 90%, 48%));
+    background: var(--tertiary-strong);
     color: white;
 }
 
 .btn-accent:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px var(--accent-teal-glow);
+    background: hsl(203, 80%, 36%);
+    box-shadow: 0 4px 14px var(--accent-teal-glow);
+}
+
+/* Destructive confirmation action */
+.btn-danger {
+    background: var(--danger);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: hsl(350, 75%, 45%);
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
 }
 
 .btn-sm {
@@ -876,7 +918,7 @@ body.dark-mode {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(15, 23, 42, 0.92);
+    background-color: var(--overlay-bg);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1693,7 +1735,7 @@ body.dark-mode {
         align-items: stretch;
         gap: 0;
         padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
-        background: hsla(224, 20%, 8%, 0.92);
+        background: var(--nav-mobile-bg);
         backdrop-filter: blur(18px);
         -webkit-backdrop-filter: blur(18px);
         border-top: 1px solid var(--border-glass);
@@ -2161,4 +2203,163 @@ body.dark-mode {
 
 .resume-sheet.editing:focus {
     outline-color: var(--accent-purple);
+}
+
+/* ==========================================================================
+   THEME TOGGLE, TOASTS, CONFIRM DIALOG, QUICK-START API STEP (v3.2.0)
+   Kept at the end of the file so these rules win over earlier breakpoints.
+   ========================================================================== */
+
+/* Dark/light toggle — fixed top right */
+.theme-toggle {
+    position: fixed;
+    top: 14px;
+    right: 16px;
+    z-index: 950;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-glass);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-glow);
+    transition: var(--transition-fast);
+}
+
+.theme-toggle:hover {
+    color: var(--text-primary);
+    border-color: var(--primary);
+}
+
+.theme-toggle i {
+    width: 17px;
+    height: 17px;
+}
+
+/* Keep page header actions clear of the fixed toggle on desktop */
+@media (min-width: 769px) {
+    .view-header {
+        padding-right: 52px;
+    }
+}
+
+/* Toast notifications (replace browser alert popups) */
+.toast-container {
+    position: fixed;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1400;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: min(92vw, 480px);
+    pointer-events: none;
+}
+
+.toast {
+    pointer-events: auto;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+    padding: 13px 16px;
+    border-radius: 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-glass);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    color: var(--text-primary);
+    font-size: 0.88rem;
+    line-height: 1.45;
+    white-space: pre-line;
+    cursor: pointer;
+    animation: toastIn 0.25s ease-out;
+}
+
+.toast i {
+    width: 17px;
+    height: 17px;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.toast-success { border-left: 3px solid var(--success); }
+.toast-success i { color: var(--success); }
+.toast-error { border-left: 3px solid var(--danger); }
+.toast-error i { color: var(--danger); }
+.toast-info { border-left: 3px solid var(--tertiary); }
+.toast-info i { color: var(--tertiary); }
+
+.toast.hide {
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: all 0.25s ease;
+}
+
+@keyframes toastIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Confirm dialog sizing */
+.modal-card-sm {
+    max-width: 420px;
+}
+
+.confirm-footer {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.confirm-footer .btn {
+    min-width: 110px;
+}
+
+/* Quick Start step 1: inline API key setup button with configured state */
+.qs-api-btn {
+    margin-top: 10px;
+    display: inline-flex;
+}
+
+.qs-api-btn.configured {
+    background: rgba(34, 197, 94, 0.12);
+    color: var(--success);
+    border: 1px solid rgba(34, 197, 94, 0.35);
+    box-shadow: none;
+}
+
+.qs-api-btn.configured:hover {
+    background: rgba(34, 197, 94, 0.18);
+    box-shadow: none;
+}
+
+/* Phone adjustments for the new elements */
+@media (max-width: 768px) {
+    /* API key setup lives in the Quick Start Guide on phones — the header
+       pill goes away entirely, leaving a clean app bar */
+    .api-status-btn {
+        display: none;
+    }
+    .sidebar {
+        padding-right: 54px; /* room for the fixed theme toggle */
+    }
+    .theme-toggle {
+        top: 10px;
+        right: 10px;
+        width: 36px;
+        height: 36px;
+        box-shadow: none;
+    }
+    .toast-container {
+        top: 66px; /* below the app bar */
+    }
+    .confirm-footer .btn {
+        flex: 1;
+    }
 }

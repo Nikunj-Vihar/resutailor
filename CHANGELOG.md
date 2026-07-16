@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.2.0 — Themes, in-app notifications & refined look
+
+- **Dark/light mode**: toggle at the top right (sun/moon), preference remembered; full light theme with all surfaces/text re-tokenized
+- **In-app notifications**: every browser alert/confirm popup replaced — slide-in toasts (success/error/info) for notices and a styled confirmation dialog (with red destructive actions) for delete/reset flows
+- **Refined look**: loud gradients replaced with solid primary/tertiary buttons and calmer hovers for an industry-standard feel
+- **Mobile API key setup** moved out of the cramped app bar into Quick Start step 1 on the Dashboard — a clear "Set Up API Key Now" button that turns into a green "API Key Configured" state once done (desktop sidebar button unchanged)
+
 ## v3.1.0 — Mobile header & polish
 
 - **Top app bar reworked**: fixed 56px height with brand on the left and a right-aligned compact API pill + round delete icon — no more oversized, unevenly spread buttons pushing each other
